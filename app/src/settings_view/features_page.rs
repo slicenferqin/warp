@@ -695,15 +695,11 @@ fn max_max_grid_size() -> usize {
 }
 
 fn block_maximum_rows_description() -> String {
-    let max_rows = if ChannelState::enable_debug_features() {
-        "10 million"
+    if ChannelState::enable_debug_features() {
+        warp_i18n::tr("settings-features-session-block-limit-description-debug")
     } else {
-        "1 million"
-    };
-
-    format!(
-        "Setting the limit above 100k lines may impact performance. Maximum rows supported is {max_rows}."
-    )
+        warp_i18n::tr("settings-features-session-block-limit-description-release")
+    }
 }
 
 fn to_string(b: bool) -> String {
@@ -2751,18 +2747,24 @@ impl FeaturesPageView {
         }
 
         let categories = vec![
-            Category::new("General", general_widgets),
-            Category::new("Session", session_widgets),
-            Category::new("Keys", keys_widgets),
-            Category::new("Text Editing", text_editing_widgets),
-            Category::new("Terminal Input", editor_widgets),
-            Category::new("Terminal", terminal_widgets),
-            Category::new("Notifications", notifications_widgets),
+            Category::new("settings-features-category-general", general_widgets),
+            Category::new("settings-features-category-session", session_widgets),
+            Category::new("settings-features-category-keys", keys_widgets),
             Category::new(
-                "Workflows",
+                "settings-features-category-text-editing",
+                text_editing_widgets,
+            ),
+            Category::new("settings-features-category-terminal-input", editor_widgets),
+            Category::new("settings-features-category-terminal", terminal_widgets),
+            Category::new(
+                "settings-features-category-notifications",
+                notifications_widgets,
+            ),
+            Category::new(
+                "settings-features-category-workflows",
                 vec![Box::new(WorkflowsInCommandSearch::default())],
             ),
-            Category::new("System", system_widgets),
+            Category::new("settings-features-category-system", system_widgets),
         ];
 
         PageType::new_categorized(categories, None)
@@ -4190,14 +4192,14 @@ impl SettingsWidget for NativeRedirectWidget {
     ) -> Box<dyn Element> {
         let ui_builder = appearance.ui_builder();
         render_body_item::<FeaturesPageAction>(
-            "Open links in desktop app".into(),
+            warp_i18n::tr("settings-features-general-open-links-desktop"),
             Some(AdditionalInfo {
                 mouse_state: self.additional_info_link.clone(),
                 on_click_action: None,
                 secondary_text: None,
-                tooltip_override_text: Some(
-                    "Automatically open links in desktop app whenever possible.".into(),
-                ),
+                tooltip_override_text: Some(warp_i18n::tr(
+                    "settings-features-general-open-links-desktop-tooltip",
+                )),
             }),
             LocalOnlyIconState::for_setting(
                 UserNativeRedirectPreference::storage_key(),
@@ -4260,7 +4262,7 @@ impl SettingsWidget for SessionRestorationWidget {
             .finish();
 
         let labeled_switch = render_body_item::<FeaturesPageAction>(
-            "Restore windows, tabs, and panes on startup".into(),
+            warp_i18n::tr("settings-features-general-restore-session"),
             Some(AdditionalInfo {
                 mouse_state: self.additional_info_link.clone(),
                 on_click_action: Some(FeaturesPageAction::OpenUrl(
@@ -4286,7 +4288,10 @@ impl SettingsWidget for SessionRestorationWidget {
 
         if app.is_wayland() {
             let message = Text::new_inline(
-                "Window positions won't be restored on Wayland. ",
+                format!(
+                    "{} ",
+                    warp_i18n::tr("settings-features-general-wayland-restore-warning")
+                ),
                 appearance.ui_font_family(),
                 CONTENT_FONT_SIZE,
             )
@@ -4295,7 +4300,7 @@ impl SettingsWidget for SessionRestorationWidget {
 
             let link = ui_builder
                 .link(
-                    "See docs.".to_owned(),
+                    warp_i18n::tr("settings-features-general-see-docs"),
                     Some("https://docs.warp.dev/terminal/sessions/session-restoration".to_owned()),
                     None,
                     self.docs_link.clone(),
@@ -4345,7 +4350,7 @@ impl SettingsWidget for SnackbarHeaderWidget {
     ) -> Box<dyn Element> {
         let ui_builder = appearance.ui_builder();
         render_body_item::<FeaturesPageAction>(
-            "Show sticky command header".into(),
+            warp_i18n::tr("settings-features-general-show-sticky-command-header"),
             Some(AdditionalInfo {
                 mouse_state: self.additional_info_link.clone(),
                 on_click_action: Some(FeaturesPageAction::OpenUrl(
@@ -4398,7 +4403,7 @@ impl SettingsWidget for LinkTooltipWidget {
     ) -> Box<dyn Element> {
         let ui_builder = appearance.ui_builder();
         render_body_item::<FeaturesPageAction>(
-            "Show tooltip on click on links".into(),
+            warp_i18n::tr("settings-features-general-show-link-tooltip"),
             None,
             LocalOnlyIconState::for_setting(
                 LinkTooltip::storage_key(),
@@ -4467,7 +4472,7 @@ impl SettingsWidget for QuitWarningModalWidget {
         let general_settings = GeneralSettings::as_ref(app);
         let ui_builder = appearance.ui_builder();
         render_body_item::<FeaturesPageAction>(
-            "Show warning before quitting/logging out".into(),
+            warp_i18n::tr("settings-features-general-show-quit-warning"),
             None,
             LocalOnlyIconState::for_setting(
                 ShowWarningBeforeQuitting::storage_key(),
@@ -4514,11 +4519,11 @@ impl SettingsWidget for LoginItemWidget {
         let general_settings = GeneralSettings::as_ref(app);
         let ui_builder = appearance.ui_builder();
         #[cfg(target_os = "macos")]
-        let label = "Start Warp at login (requires macOS 13+)";
+        let label = warp_i18n::tr("settings-features-general-start-at-login-macos");
         #[cfg(not(target_os = "macos"))]
-        let label = "Start Warp at login";
+        let label = warp_i18n::tr("settings-features-general-start-at-login");
         render_body_item::<FeaturesPageAction>(
-            label.into(),
+            label,
             None,
             LocalOnlyIconState::for_setting(
                 LoginItem::storage_key(),
@@ -4565,7 +4570,7 @@ impl SettingsWidget for QuitWhenAllWindowsClosedWidget {
         let general_settings = GeneralSettings::as_ref(app);
         let ui_builder = appearance.ui_builder();
         render_body_item::<FeaturesPageAction>(
-            "Quit when all windows are closed".into(),
+            warp_i18n::tr("settings-features-general-quit-when-all-windows-closed"),
             None,
             LocalOnlyIconState::for_setting(
                 QuitOnLastWindowClosed::storage_key(),
@@ -4612,7 +4617,7 @@ impl SettingsWidget for ShowChangelogWidget {
         let changelog_settings = ChangelogSettings::as_ref(app);
         let ui_builder = appearance.ui_builder();
         render_body_item::<FeaturesPageAction>(
-            "Show changelog toast after updates".into(),
+            warp_i18n::tr("settings-features-general-show-changelog-after-updates"),
             None,
             LocalOnlyIconState::for_setting(
                 ShowChangelogAfterUpdate::storage_key(),
@@ -4685,7 +4690,10 @@ impl SettingsWidget for MouseScrollMultiplierWidget {
                 } else {
                     appearance
                         .ui_builder()
-                        .wrappable_text("Allowed Values: 1-20", true)
+                        .wrappable_text(
+                            warp_i18n::tr("settings-features-general-mouse-scroll-allowed-values"),
+                            true,
+                        )
                         .with_style(UiComponentStyles {
                             font_color: Some(themes::theme::Fill::error().into_solid()),
                             ..Default::default()
@@ -4698,14 +4706,14 @@ impl SettingsWidget for MouseScrollMultiplierWidget {
             .finish();
 
         render_body_item::<FeaturesPageAction>(
-            "Lines scrolled by mouse wheel interval".into(),
+            warp_i18n::tr("settings-features-general-mouse-scroll-lines"),
             Some(AdditionalInfo {
                 mouse_state: self.additional_info_link.clone(),
                 on_click_action: None,
                 secondary_text: None,
-                tooltip_override_text: Some(
-                    "Supports floating point values between 1 and 20.".to_string(),
-                ),
+                tooltip_override_text: Some(warp_i18n::tr(
+                    "settings-features-general-mouse-scroll-tooltip",
+                )),
             }),
             LocalOnlyIconState::for_setting(
                 MouseScrollMultiplier::storage_key(),
@@ -4793,7 +4801,10 @@ impl SettingsWidget for DefaultTerminalWidget {
         let default_terminal = DefaultTerminal::as_ref(app);
         if default_terminal.is_warp_default() {
             ui_builder
-                .wrappable_text("Warp is the default terminal", true)
+                .wrappable_text(
+                    warp_i18n::tr("settings-features-general-warp-default-terminal"),
+                    true,
+                )
                 .with_style(UiComponentStyles {
                     font_color: Some(appearance.theme().disabled_ui_text_color().into()),
                     margin: Some(Coords::default().bottom(16.)),
@@ -4804,7 +4815,7 @@ impl SettingsWidget for DefaultTerminalWidget {
         } else {
             ui_builder
                 .link(
-                    "Make Warp the default terminal".to_string(),
+                    warp_i18n::tr("settings-features-general-make-warp-default-terminal"),
                     None,
                     Some(Box::new(|ctx| {
                         ctx.dispatch_typed_action(FeaturesPageAction::MakeWarpDefaultTerminal);
@@ -4857,7 +4868,7 @@ impl SettingsWidget for BlockLimitWidget {
             .finish();
 
         render_body_item::<FeaturesPageAction>(
-            "Maximum rows in a block".into(),
+            warp_i18n::tr("settings-features-session-max-rows"),
             None,
             LocalOnlyIconState::for_setting(
                 MaximumGridSize::storage_key(),
@@ -4897,14 +4908,16 @@ impl SettingsWidget for SSHWrapperWidget {
     ) -> Box<dyn Element> {
         let ui_builder = appearance.ui_builder();
         render_body_item::<FeaturesPageAction>(
-            "Warp SSH Wrapper".into(),
+            warp_i18n::tr("settings-features-session-ssh-wrapper"),
             Some(AdditionalInfo {
                 mouse_state: self.additional_info_link.clone(),
                 on_click_action: Some(FeaturesPageAction::OpenUrl(
                     "https://docs.warp.dev/terminal/warpify/ssh-legacy#implementation".into(),
                 )),
                 secondary_text: if view.ssh_wrapper_toggled {
-                    Some("This change will take effect in new sessions".to_string())
+                    Some(warp_i18n::tr(
+                        "settings-features-session-ssh-wrapper-new-sessions",
+                    ))
                 } else {
                     None
                 },
