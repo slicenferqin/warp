@@ -56,8 +56,6 @@ cfg_if::cfg_if! {
 #[cfg(all(feature = "local_fs", feature = "local_tty"))]
 use crate::terminal::local_shell::LocalShellState;
 
-const UNCOMMITTED_CHANGES: &str = "Uncommitted changes";
-
 /// Represents a parsed unified diff header
 /// Format: @@ -old_start,old_count +new_start,new_count @@ [optional context]
 #[derive(Clone, Debug, PartialEq)]
@@ -2866,18 +2864,24 @@ impl DiffStateModel {
 
     fn changes_vs_main_branch_label(&self) -> String {
         let main_branch_name = self.get_main_branch_name().unwrap_or("main".to_string());
-        format!("Changes vs. {main_branch_name}")
+        warp_i18n::tr_with_args(
+            "app-code-review-changes-vs-main-branch",
+            &[("main_branch_name", main_branch_name.as_str())],
+        )
     }
 
     fn changes_vs_head_label(&self) -> String {
-        UNCOMMITTED_CHANGES.to_string()
+        warp_i18n::tr("app-code-review-uncommitted-changes")
     }
 
     pub fn label_text(&self, mode: DiffMode) -> String {
         match mode {
             DiffMode::Head => self.changes_vs_head_label(),
             DiffMode::MainBranch => self.changes_vs_main_branch_label(),
-            DiffMode::OtherBranch(branch) => format!("Changes vs. {branch}"),
+            DiffMode::OtherBranch(branch) => warp_i18n::tr_with_args(
+                "app-code-review-changes-vs-branch",
+                &[("branch", branch.as_str())],
+            ),
         }
     }
 

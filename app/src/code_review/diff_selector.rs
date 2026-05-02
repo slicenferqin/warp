@@ -169,7 +169,7 @@ impl View for DiffSelector {
         let font_size = appearance.ui_font_size();
 
         let label = if self.trigger_label.is_empty() {
-            "Uncommitted changes".to_string()
+            warp_i18n::tr("app-code-review-uncommitted-changes")
         } else {
             self.trigger_label.clone()
         };
