@@ -208,6 +208,9 @@ fn audit_source_file(path: &Path, workspace_root: &Path, audit: &mut SourceAudit
     let source =
         fs::read_to_string(path).with_context(|| format!("failed to read {}", path.display()))?;
     let mut in_ignored_function = false;
+    let mut ignored_brace_depth: Option<usize> = None;
+    let mut ignored_block_opened = false;
+    let mut brace_depth = 0usize;
 
     for (line_index, line) in source.lines().enumerate() {
         let trimmed = line.trim_start();
@@ -215,10 +218,14 @@ fn audit_source_file(path: &Path, workspace_root: &Path, audit: &mut SourceAudit
         if trimmed.starts_with("fn search_terms(") || trimmed.starts_with("fn ui_name(") {
             in_ignored_function = true;
         }
+        if ignored_brace_depth.is_none() && starts_ignored_block(trimmed) {
+            ignored_brace_depth = Some(brace_depth);
+            ignored_block_opened = false;
+        }
 
         audit.localized_call_sites += localized_call_site_count(line);
 
-        if !in_ignored_function {
+        if !in_ignored_function && ignored_brace_depth.is_none() {
             for literal in string_literals_in_line(line) {
                 if is_candidate_ui_string(line, &literal) {
                     audit.bare_string_candidates.push(BareStringCandidate {
@@ -236,9 +243,79 @@ fn audit_source_file(path: &Path, workspace_root: &Path, audit: &mut SourceAudit
         if in_ignored_function && trimmed == "}" {
             in_ignored_function = false;
         }
+
+        brace_depth = update_brace_depth(line, brace_depth);
+        if ignored_brace_depth.is_some() && line_contains_code_char(line, '{') {
+            ignored_block_opened = true;
+        }
+        if ignored_block_opened && ignored_brace_depth.is_some_and(|depth| brace_depth <= depth) {
+            ignored_brace_depth = None;
+            ignored_block_opened = false;
+        }
     }
 
     Ok(())
+}
+
+fn starts_ignored_block(trimmed: &str) -> bool {
+    trimmed.starts_with("pub mod flags")
+        || trimmed.starts_with("impl Display for SettingsSection")
+        || trimmed.starts_with("impl FromStr for SettingsSection")
+        || trimmed.starts_with("pub fn init_actions_from_parent_view")
+}
+
+fn update_brace_depth(line: &str, depth: usize) -> usize {
+    let mut depth = depth;
+    let mut in_string = false;
+    let mut escaped = false;
+    let mut chars = line.chars().peekable();
+
+    while let Some(ch) = chars.next() {
+        if !in_string && ch == '/' && chars.peek().is_some_and(|next| *next == '/') {
+            break;
+        }
+
+        if escaped {
+            escaped = false;
+            continue;
+        }
+
+        match ch {
+            '\\' if in_string => escaped = true,
+            '"' => in_string = !in_string,
+            '{' if !in_string => depth += 1,
+            '}' if !in_string => depth = depth.saturating_sub(1),
+            _ => {}
+        }
+    }
+
+    depth
+}
+
+fn line_contains_code_char(line: &str, target: char) -> bool {
+    let mut in_string = false;
+    let mut escaped = false;
+    let mut chars = line.chars().peekable();
+
+    while let Some(ch) = chars.next() {
+        if !in_string && ch == '/' && chars.peek().is_some_and(|next| *next == '/') {
+            break;
+        }
+
+        if escaped {
+            escaped = false;
+            continue;
+        }
+
+        match ch {
+            '\\' if in_string => escaped = true,
+            '"' => in_string = !in_string,
+            _ if !in_string && ch == target => return true,
+            _ => {}
+        }
+    }
+
+    false
 }
 
 fn localized_call_site_count(line: &str) -> usize {
@@ -328,6 +405,10 @@ fn is_ignored_context(line: &str) -> bool {
         "FeatureFlag::",
         "ContextFlag::",
         "TelemetryEvent::",
+        "ToggleSettingActionPair::",
+        "SettingActionPairDescriptions::",
+        "SettingActionPairContexts::",
+        "FixedBinding::",
         "LoginGatedFeature",
         "ui_name()",
         "storage_key:",
@@ -369,6 +450,7 @@ fn is_ignored_literal(literal: &str) -> bool {
         || literal.starts_with('/')
         || literal.starts_with('.')
         || literal.starts_with('#')
+        || is_internal_identifier_literal(literal)
     {
         return true;
     }
@@ -387,6 +469,18 @@ fn is_ignored_literal(literal: &str) -> bool {
         && literal
             .chars()
             .all(|ch| ch.is_ascii_lowercase() || ch.is_ascii_digit() || ch == '_' || ch == '-')
+}
+
+fn is_internal_identifier_literal(literal: &str) -> bool {
+    !literal.contains(' ')
+        && literal
+            .chars()
+            .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.' | ':'))
+        && (literal.contains('_')
+            || literal.contains("Flag.")
+            || literal.ends_with("Enabled")
+            || literal.ends_with("Open")
+            || literal.ends_with("View"))
 }
 
 #[cfg(test)]
@@ -419,6 +513,22 @@ mod tests {
             r#"Text::new("Check for updates")"#,
             "Check for updates"
         ));
+        assert!(!is_candidate_ui_string(
+            r#"pub const COPY_ON_SELECT_CONTEXT_FLAG: &str = "Copy_On_Select";"#,
+            "Copy_On_Select"
+        ));
+        assert!(!is_candidate_ui_string(
+            r#"FixedBinding::empty("ShowConversationHistory", action, context)"#,
+            "ShowConversationHistory"
+        ));
+    }
+
+    #[test]
+    fn tracks_brace_depth_outside_strings_and_comments() {
+        assert_eq!(update_brace_depth(r#"fn f() { let s = "{"; }"#, 0), 0);
+        assert_eq!(update_brace_depth(r#"if ok { // }"#, 0), 1);
+        assert!(line_contains_code_char(r#"fn f() { let s = "x";"#, '{'));
+        assert!(!line_contains_code_char(r#"let s = "{";"#, '{'));
     }
 
     #[test]
