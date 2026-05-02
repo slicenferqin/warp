@@ -11,6 +11,7 @@ use crate::{
     editor::{EditorView, Event as EditorEvent, SingleLineEditorOptions, TextOptions},
     report_if_error, send_telemetry_from_ctx,
     server::telemetry::TelemetryEvent,
+    settings::LanguageSettings,
     settings_view::features_page::render_group,
     terminal::session_settings::*,
     view_components::{dropdown::TOP_MENU_BAR_HEIGHT, Dropdown, DropdownItem},
@@ -81,27 +82,13 @@ impl WorkingDirectoryView {
                 event,
                 SessionSettingsChangedEvent::WorkingDirectoryConfig { .. }
             ) {
-                me.working_directory_dropdown.update(ctx, |dropdown, ctx| {
-                    init_top_level_dropdown(dropdown, ctx);
-                    ctx.notify();
-                });
-                me.new_window_working_directory_dropdown
-                    .update(ctx, |dropdown, ctx| {
-                        init_per_source_dropdown(dropdown, NewSessionSource::Window, ctx);
-                        ctx.notify();
-                    });
-                me.new_tab_working_directory_dropdown
-                    .update(ctx, |dropdown, ctx| {
-                        init_per_source_dropdown(dropdown, NewSessionSource::Tab, ctx);
-                        ctx.notify();
-                    });
-                me.split_pane_working_directory_dropdown
-                    .update(ctx, |dropdown, ctx| {
-                        init_per_source_dropdown(dropdown, NewSessionSource::SplitPane, ctx);
-                        ctx.notify();
-                    });
+                me.refresh_localized_text(ctx);
                 ctx.notify();
             }
+        });
+        ctx.subscribe_to_model(&LanguageSettings::handle(ctx), |me, _, _, ctx| {
+            me.refresh_localized_text(ctx);
+            ctx.notify();
         });
 
         Self {
@@ -113,6 +100,43 @@ impl WorkingDirectoryView {
             new_tab_working_directory_editor,
             split_pane_working_directory_dropdown,
             split_pane_working_directory_editor,
+        }
+    }
+
+    fn refresh_localized_text(&mut self, ctx: &mut ViewContext<Self>) {
+        self.working_directory_dropdown
+            .update(ctx, |dropdown, ctx| {
+                init_top_level_dropdown(dropdown, ctx);
+                ctx.notify();
+            });
+        self.new_window_working_directory_dropdown
+            .update(ctx, |dropdown, ctx| {
+                init_per_source_dropdown(dropdown, NewSessionSource::Window, ctx);
+                ctx.notify();
+            });
+        self.new_tab_working_directory_dropdown
+            .update(ctx, |dropdown, ctx| {
+                init_per_source_dropdown(dropdown, NewSessionSource::Tab, ctx);
+                ctx.notify();
+            });
+        self.split_pane_working_directory_dropdown
+            .update(ctx, |dropdown, ctx| {
+                init_per_source_dropdown(dropdown, NewSessionSource::SplitPane, ctx);
+                ctx.notify();
+            });
+
+        for editor in [
+            &self.working_directory_editor,
+            &self.new_window_working_directory_editor,
+            &self.new_tab_working_directory_editor,
+            &self.split_pane_working_directory_editor,
+        ] {
+            editor.update(ctx, |editor, ctx| {
+                editor.set_placeholder_text(
+                    warp_i18n::tr("settings-features-working-dir-directory-path"),
+                    ctx,
+                );
+            });
         }
     }
 }
@@ -145,21 +169,30 @@ impl View for WorkingDirectoryView {
             let items = Flex::column()
                 .with_cross_axis_alignment(CrossAxisAlignment::Stretch)
                 .with_children([
-                    ui_builder.label("New window").build().finish(),
+                    ui_builder
+                        .label(warp_i18n::tr("settings-features-working-dir-new-window"))
+                        .build()
+                        .finish(),
                     render_row(
                         &self.new_window_working_directory_dropdown,
                         &self.new_window_working_directory_editor,
                         config.new_window.mode == WorkingDirectoryMode::CustomDir,
                         appearance,
                     ),
-                    ui_builder.label("New tab").build().finish(),
+                    ui_builder
+                        .label(warp_i18n::tr("settings-features-working-dir-new-tab"))
+                        .build()
+                        .finish(),
                     render_row(
                         &self.new_tab_working_directory_dropdown,
                         &self.new_tab_working_directory_editor,
                         config.new_tab.mode == WorkingDirectoryMode::CustomDir,
                         appearance,
                     ),
-                    ui_builder.label("Split pane").build().finish(),
+                    ui_builder
+                        .label(warp_i18n::tr("settings-features-working-dir-split-pane"))
+                        .build()
+                        .finish(),
                     render_row(
                         &self.split_pane_working_directory_dropdown,
                         &self.split_pane_working_directory_editor,
@@ -305,13 +338,13 @@ fn init_top_level_dropdown(
     .into_iter()
     .map(|mode| {
         DropdownItem::new(
-            mode.dropdown_item_label(),
+            working_directory_mode_label(mode),
             WorkingDirectoryAction::SetGlobalWorkingDirectoryMode(Some(mode)),
         )
     })
     .collect_vec();
     items.push(DropdownItem::new(
-        "Advanced".to_string(),
+        warp_i18n::tr("settings-features-working-dir-advanced"),
         WorkingDirectoryAction::SetGlobalWorkingDirectoryMode(None),
     ));
     let advanced_item_index = items.len() - 1;
@@ -322,7 +355,7 @@ fn init_top_level_dropdown(
     if config.advanced_mode {
         dropdown.set_selected_by_index(advanced_item_index, ctx);
     } else {
-        dropdown.set_selected_by_name(config.global.mode.dropdown_item_label(), ctx);
+        dropdown.set_selected_by_index(working_directory_mode_index(config.global.mode), ctx);
     }
 }
 
@@ -340,7 +373,7 @@ fn init_per_source_dropdown(
     .into_iter()
     .map(|mode| {
         DropdownItem::new(
-            mode.dropdown_item_label(),
+            working_directory_mode_label(mode),
             WorkingDirectoryAction::SetPerSourceWorkingDirectoryMode(source, mode),
         )
     })
@@ -354,7 +387,25 @@ fn init_per_source_dropdown(
         NewSessionSource::Tab => &config.new_tab,
         NewSessionSource::Window => &config.new_window,
     };
-    dropdown.set_selected_by_name(source_config.mode.dropdown_item_label(), ctx);
+    dropdown.set_selected_by_index(working_directory_mode_index(source_config.mode), ctx);
+}
+
+fn working_directory_mode_label(mode: WorkingDirectoryMode) -> String {
+    match mode {
+        WorkingDirectoryMode::HomeDir => warp_i18n::tr("settings-features-working-dir-home"),
+        WorkingDirectoryMode::PreviousDir => {
+            warp_i18n::tr("settings-features-working-dir-previous")
+        }
+        WorkingDirectoryMode::CustomDir => warp_i18n::tr("settings-features-working-dir-custom"),
+    }
+}
+
+fn working_directory_mode_index(mode: WorkingDirectoryMode) -> usize {
+    match mode {
+        WorkingDirectoryMode::HomeDir => 0,
+        WorkingDirectoryMode::PreviousDir => 1,
+        WorkingDirectoryMode::CustomDir => 2,
+    }
 }
 
 /// Creates a new editor view for entering a custom initial directory path.
@@ -370,7 +421,10 @@ fn create_editor(
         };
         ctx.add_typed_action_view(|ctx| {
             let mut editor = EditorView::single_line(options, ctx);
-            editor.set_placeholder_text("Directory path", ctx);
+            editor.set_placeholder_text(
+                warp_i18n::tr("settings-features-working-dir-directory-path"),
+                ctx,
+            );
             editor
         })
     };

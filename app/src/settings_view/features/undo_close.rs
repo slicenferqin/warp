@@ -17,6 +17,7 @@ use crate::{
     appearance::Appearance,
     editor::{self, EditorView, SingleLineEditorOptions, TextOptions},
     report_if_error,
+    settings::LanguageSettings,
     settings_view::{
         features_page::render_group,
         settings_page::{render_body_item, LocalOnlyIconState, ToggleState},
@@ -69,6 +70,9 @@ impl UndoCloseView {
                 );
             });
             ctx.notify()
+        });
+        ctx.subscribe_to_model(&LanguageSettings::handle(ctx), |_, _, _, ctx| {
+            ctx.notify();
         });
 
         ctx.subscribe_to_view(&grace_period_editor, move |me, _, event, ctx| {
@@ -137,7 +141,7 @@ impl UndoCloseView {
             .with_child(
                 Container::new(
                     Text::new_inline(
-                        "Grace period (seconds)",
+                        warp_i18n::tr("settings-features-undo-close-grace-period"),
                         appearance.ui_font_family(),
                         appearance.ui_font_size(),
                     )
@@ -178,7 +182,7 @@ impl View for UndoCloseView {
         let mut column = Flex::column()
             .with_cross_axis_alignment(CrossAxisAlignment::Stretch)
             .with_child(render_body_item::<Action>(
-                "Enable reopening of closed sessions".into(),
+                warp_i18n::tr("settings-features-undo-close-enable"),
                 None,
                 LocalOnlyIconState::for_setting(
                     UndoCloseEnabled::storage_key(),
