@@ -59,6 +59,18 @@ fn translates_static_keys_for_supported_locales() {
         tr_in_locale(Locale::ZhCn, "settings-tooltip-local-only"),
         "此设置不会同步到你的其他设备"
     );
+    assert_eq!(
+        tr_in_locale(Locale::ZhCn, "settings-privacy-secret-redaction-title"),
+        "敏感信息遮盖"
+    );
+    assert_eq!(
+        tr_in_locale(Locale::ZhCn, "settings-privacy-add-regex-invalid"),
+        "正则表达式无效"
+    );
+    assert_eq!(
+        tr_in_locale(Locale::En, "settings-privacy-policy-title"),
+        "Privacy policy"
+    );
 }
 
 #[test]

@@ -54,7 +54,7 @@ impl SettingsWidget for AboutPageWidget {
     type View = AboutPageView;
 
     fn search_terms(&self) -> &str {
-        "about warp version"
+        "about warp version 关于 版本"
     }
 
     fn render(
@@ -118,7 +118,7 @@ impl SettingsWidget for AboutPageWidget {
                 .with_child(version_row.finish())
                 .with_child(
                     ui_builder
-                        .span("Copyright 2026 Warp")
+                        .span(warp_i18n::tr("settings-about-copyright"))
                         .build()
                         .with_margin_top(16.)
                         .finish(),
