@@ -1,0 +1,10 @@
+common-ok = OK
+common-cancel = 取消
+common-apply = 应用
+common-save = 保存
+common-close = 关闭
+common-back = 返回
+common-next = 下一步
+common-retry = 重试
+common-delete = 删除
+common-edit = 编辑

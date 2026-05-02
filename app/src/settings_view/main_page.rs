@@ -15,7 +15,7 @@ use crate::{
     appearance::Appearance,
     auth::{auth_state::AuthState, auth_view_modal::AuthViewVariant},
     report_if_error,
-    settings::cloud_preferences::CloudPreferencesSettings,
+    settings::{cloud_preferences::CloudPreferencesSettings, LanguageSettings},
     TelemetryEvent,
 };
 use crate::{auth::auth_manager::AuthManager, server::ids::ServerId};
@@ -29,6 +29,7 @@ use std::sync::{Arc, Mutex};
 use warp_core::features::FeatureFlag;
 use warp_core::ui::icons::Icon;
 use warp_core::{channel::ChannelState, context_flag::ContextFlag};
+use warp_i18n::LanguagePreference;
 use warpui::{
     assets::asset_cache::AssetSource,
     elements::{Border, Empty, MainAxisAlignment, MainAxisSize},
@@ -38,8 +39,8 @@ use warpui::{
 };
 use warpui::{
     elements::{
-        Align, ConstrainedBox, Container, CornerRadius, CrossAxisAlignment, Element, Flex,
-        MouseStateHandle, ParentElement, Radius, Shrinkable, Text,
+        Align, ChildView, ConstrainedBox, Container, CornerRadius, CrossAxisAlignment, Element,
+        Flex, MouseStateHandle, ParentElement, Radius, Shrinkable, Text,
     },
     Action, AppContext,
 };
@@ -54,6 +55,8 @@ use warpui::{fonts::Weight, keymap::ContextPredicate};
 use warpui::{
     Entity, ModelHandle, SingletonEntity, TypedActionView, View, ViewContext, ViewHandle,
 };
+
+use crate::view_components::{Dropdown, DropdownItem};
 
 const PHOTO_SIZE: f32 = 40.;
 const REFERRAL_CTA: &str = "Earn rewards by sharing Warp with friends & colleagues";
@@ -130,6 +133,7 @@ pub enum MainPageAction {
     GenerateStripeBillingPortalLink {
         team_uid: ServerId,
     },
+    SetLanguagePreference(LanguagePreference),
     SignupAnonymousUser,
     OpenUrl(String),
 }
@@ -167,6 +171,7 @@ pub enum MainSettingsPageEvent {
 pub struct MainSettingsPageView {
     page: PageType<Self>,
     auth_state: Arc<AuthState>,
+    language_dropdown: ViewHandle<Dropdown<MainPageAction>>,
 }
 
 impl Entity for MainSettingsPageView {
@@ -233,6 +238,16 @@ impl TypedActionView for MainSettingsPageView {
                     user_workspaces.generate_stripe_billing_portal_link(*team_uid, ctx);
                 });
             }
+            MainPageAction::SetLanguagePreference(preference) => {
+                LanguageSettings::handle(ctx).update(ctx, |language_settings, ctx| {
+                    report_if_error!(language_settings
+                        .language_preference
+                        .set_value(*preference, ctx));
+                });
+                warp_i18n::set_language_preference(*preference);
+                self.update_language_dropdown(ctx);
+                ctx.notify();
+            }
             MainPageAction::SignupAnonymousUser => {
                 ctx.emit(MainSettingsPageEvent::SignupAnonymousUser);
             }
@@ -267,15 +282,24 @@ impl MainSettingsPageView {
             ctx.notify();
         });
 
+        ctx.subscribe_to_model(&LanguageSettings::handle(ctx), |me, _, _, ctx| {
+            me.update_language_dropdown(ctx);
+            ctx.notify();
+        });
+
         let auth_manager_handle = AuthManager::handle(ctx);
         ctx.subscribe_to_model(&auth_manager_handle, |_, _, _, ctx| {
             ctx.notify();
         });
 
+        let language_dropdown = ctx.add_typed_action_view(Dropdown::new);
+
         let mut widgets: Vec<Box<dyn SettingsWidget<View = Self>>> = vec![
             Box::new(AccountWidget::default()),
             Box::new(DividerWidget {}),
         ];
+
+        widgets.push(Box::new(LanguageWidget));
 
         widgets.push(Box::new(SettingsSyncWidget::default()));
 
@@ -289,7 +313,51 @@ impl MainSettingsPageView {
 
         let page = PageType::new_uncategorized(widgets, Some("Account"));
 
-        MainSettingsPageView { page, auth_state }
+        let mut view = MainSettingsPageView {
+            page,
+            auth_state,
+            language_dropdown,
+        };
+        view.update_language_dropdown(ctx);
+        view
+    }
+
+    const LANGUAGE_OPTIONS: [LanguagePreference; 3] = [
+        LanguagePreference::System,
+        LanguagePreference::ZhCn,
+        LanguagePreference::En,
+    ];
+
+    fn update_language_dropdown(&mut self, ctx: &mut ViewContext<Self>) {
+        let current_preference = *LanguageSettings::as_ref(ctx).language_preference.value();
+        let selected_index = Self::LANGUAGE_OPTIONS
+            .iter()
+            .position(|preference| *preference == current_preference)
+            .unwrap_or(0);
+
+        self.language_dropdown.update(ctx, |dropdown, ctx| {
+            dropdown.set_items(
+                Self::LANGUAGE_OPTIONS
+                    .into_iter()
+                    .map(|preference| {
+                        DropdownItem::new(
+                            Self::language_preference_label(preference),
+                            MainPageAction::SetLanguagePreference(preference),
+                        )
+                    })
+                    .collect(),
+                ctx,
+            );
+            dropdown.set_selected_by_index(selected_index, ctx);
+        });
+    }
+
+    fn language_preference_label(preference: LanguagePreference) -> String {
+        match preference {
+            LanguagePreference::System => warp_i18n::tr("settings-language-option-system"),
+            LanguagePreference::ZhCn => warp_i18n::tr("settings-language-option-zh-cn"),
+            LanguagePreference::En => warp_i18n::tr("settings-language-option-en"),
+        }
     }
 
     fn handle_autoupdate_state_change(
@@ -661,6 +729,40 @@ impl SettingsWidget for DividerWidget {
                 .with_border(Border::bottom(1.).with_border_fill(appearance.theme().outline()))
                 .finish(),
         )
+        .with_margin_top(VERTICAL_MARGIN)
+        .finish()
+    }
+}
+
+struct LanguageWidget;
+
+impl SettingsWidget for LanguageWidget {
+    type View = MainSettingsPageView;
+
+    fn search_terms(&self) -> &str {
+        "language locale chinese english system"
+    }
+
+    fn render(
+        &self,
+        view: &Self::View,
+        appearance: &Appearance,
+        _app: &AppContext,
+    ) -> Box<dyn Element> {
+        let language_dropdown =
+            ConstrainedBox::new(ChildView::new(&view.language_dropdown).finish())
+                .with_width(190.)
+                .finish();
+
+        Container::new(render_body_item::<MainPageAction>(
+            warp_i18n::tr("settings-language-title"),
+            None,
+            LocalOnlyIconState::Hidden,
+            ToggleState::Enabled,
+            appearance,
+            language_dropdown,
+            Some(warp_i18n::tr("settings-language-description")),
+        ))
         .with_margin_top(VERTICAL_MARGIN)
         .finish()
     }

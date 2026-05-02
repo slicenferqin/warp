@@ -197,6 +197,23 @@ fn subpage_display_names_are_correct() {
 }
 
 #[test]
+fn localized_labels_are_separate_from_display_names() {
+    assert_eq!(
+        SettingsSection::Account.localized_label_in_locale(warp_i18n::Locale::ZhCn),
+        "账户"
+    );
+    assert_eq!(
+        SettingsSection::Keybindings.localized_label_in_locale(warp_i18n::Locale::ZhCn),
+        "快捷键"
+    );
+    assert_eq!(
+        SettingsSection::WarpAgent.localized_label_in_locale(warp_i18n::Locale::En),
+        "Warp Agent"
+    );
+    assert_eq!(SettingsSection::WarpAgent.to_string(), "Warp Agent");
+}
+
+#[test]
 fn subpage_from_str_parses_display_names() {
     // Both the legacy "Oz" name and the new "Warp Agent" display name must
     // resolve to SettingsSection::WarpAgent so existing deep links, persisted
@@ -637,16 +654,16 @@ fn realistic_nav_items() -> Vec<SettingsNavItem> {
     vec![
         SettingsNavItem::Page(SettingsSection::Account),
         SettingsNavItem::Umbrella(SettingsUmbrella::new(
-            "Agents",
+            "settings-nav-agents",
             SettingsSection::ai_subpages().to_vec(),
         )),
         SettingsNavItem::Page(SettingsSection::BillingAndUsage),
         SettingsNavItem::Umbrella(SettingsUmbrella::new(
-            "Code",
+            "settings-nav-code",
             SettingsSection::code_subpages().to_vec(),
         )),
         SettingsNavItem::Umbrella(SettingsUmbrella::new(
-            "Cloud platform",
+            "settings-nav-cloud-platform",
             SettingsSection::cloud_platform_subpages().to_vec(),
         )),
         SettingsNavItem::Page(SettingsSection::Teams),

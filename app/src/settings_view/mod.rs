@@ -15,7 +15,10 @@ use crate::{
         pane::view, BackingView, Direction, PaneConfiguration, PaneEvent, SplitPaneState,
     },
     server::server_api::ServerApiProvider,
-    settings::{AISettings, BlockVisibilitySettings, SettingsFileError},
+    settings::{
+        AISettings, BlockVisibilitySettings, LanguageSettings, LanguageSettingsChangedEvent,
+        SettingsFileError,
+    },
     settings_view::mcp_servers_page::MCPServersSettingsPageEvent,
     terminal::{model::blockgrid::BlockGrid, SizeInfo},
     ui_components::icons,
@@ -312,6 +315,43 @@ impl SettingsSection {
     /// The ordered list of Cloud platform subpage sections.
     pub fn cloud_platform_subpages() -> &'static [Self] {
         &[Self::CloudEnvironments, Self::OzCloudAPIKeys]
+    }
+
+    pub fn i18n_key(&self) -> &'static str {
+        match self {
+            Self::About => "settings-nav-about",
+            Self::Account => "settings-nav-account",
+            Self::MCPServers => "settings-nav-mcp-servers",
+            Self::BillingAndUsage => "settings-nav-billing-and-usage",
+            Self::Appearance => "settings-nav-appearance",
+            Self::Features => "settings-nav-features",
+            Self::Keybindings => "settings-nav-keyboard-shortcuts",
+            Self::Privacy => "settings-nav-privacy",
+            Self::Referrals => "settings-nav-referrals",
+            Self::SharedBlocks => "settings-nav-shared-blocks",
+            Self::Teams => "settings-nav-teams",
+            Self::WarpDrive => "settings-nav-warp-drive",
+            Self::Warpify => "settings-nav-warpify",
+            Self::AI => "settings-nav-agents",
+            Self::WarpAgent => "settings-nav-warp-agent",
+            Self::AgentProfiles => "settings-nav-profiles",
+            Self::AgentMCPServers => "settings-nav-mcp-servers",
+            Self::Knowledge => "settings-nav-knowledge",
+            Self::ThirdPartyCLIAgents => "settings-nav-third-party-cli-agents",
+            Self::Code => "settings-nav-code",
+            Self::CodeIndexing => "settings-nav-code-indexing",
+            Self::EditorAndCodeReview => "settings-nav-editor-and-code-review",
+            Self::CloudEnvironments => "settings-nav-cloud-environments",
+            Self::OzCloudAPIKeys => "settings-nav-oz-cloud-api-keys",
+        }
+    }
+
+    pub fn localized_label(&self) -> String {
+        warp_i18n::tr(self.i18n_key())
+    }
+
+    pub fn localized_label_in_locale(&self, locale: warp_i18n::Locale) -> String {
+        warp_i18n::tr_in_locale(locale, self.i18n_key())
     }
 }
 
@@ -1142,11 +1182,19 @@ impl SettingsView {
                 ..Default::default()
             };
             let mut editor = EditorView::single_line(options, ctx);
-            editor.set_placeholder_text("Search", ctx);
+            editor.set_placeholder_text(warp_i18n::tr("settings-search-placeholder"), ctx);
             editor
         });
 
         ctx.subscribe_to_view(&search_editor, Self::handle_search_editor_event);
+        ctx.subscribe_to_model(&LanguageSettings::handle(ctx), |me, _, event, ctx| {
+            if matches!(
+                event,
+                LanguageSettingsChangedEvent::LanguagePreferenceSetting { .. }
+            ) {
+                me.refresh_localized_text(ctx);
+            }
+        });
 
         let context_menu = ctx.add_typed_action_view(|_| {
             Menu::new()
@@ -1185,19 +1233,19 @@ impl SettingsView {
         let mut nav_items = vec![
             SettingsNavItem::Page(SettingsSection::Account),
             SettingsNavItem::Umbrella(SettingsUmbrella::new(
-                "Agents",
+                "settings-nav-agents",
                 SettingsSection::ai_subpages().to_vec(),
             )),
             SettingsNavItem::Page(SettingsSection::BillingAndUsage),
             SettingsNavItem::Umbrella(SettingsUmbrella::new(
-                "Code",
+                "settings-nav-code",
                 vec![
                     SettingsSection::CodeIndexing,
                     SettingsSection::EditorAndCodeReview,
                 ],
             )),
             SettingsNavItem::Umbrella(SettingsUmbrella::new(
-                "Cloud platform",
+                "settings-nav-cloud-platform",
                 vec![
                     SettingsSection::CloudEnvironments,
                     SettingsSection::OzCloudAPIKeys,
@@ -1256,6 +1304,13 @@ impl SettingsView {
             settings_error_banner_dismissed: false,
             footer_mouse_states: SettingsFooterMouseStates::default(),
         }
+    }
+
+    fn refresh_localized_text(&mut self, ctx: &mut ViewContext<Self>) {
+        self.search_editor.update(ctx, |editor, ctx| {
+            editor.set_placeholder_text(warp_i18n::tr("settings-search-placeholder"), ctx);
+        });
+        ctx.notify();
     }
 
     /// Pushes the current settings-file error state from `Workspace` into this
@@ -2224,10 +2279,10 @@ impl SettingsView {
         Container::new(
             Align::new(
                 Flex::column()
-                .with_cross_axis_alignment(CrossAxisAlignment::Center)
+                    .with_cross_axis_alignment(CrossAxisAlignment::Center)
                     .with_children([
                         Text::new(
-                            "No settings match your search.",
+                            warp_i18n::tr("settings-search-no-results-title"),
                             appearance.ui_font_family(),
                             appearance.ui_font_size(),
                         )
@@ -2235,7 +2290,7 @@ impl SettingsView {
                         .with_color(theme.sub_text_color(theme.background()).into_solid())
                         .finish(),
                         Text::new(
-                            "You may want to try using different keywords or checking for any possible typos.",
+                            warp_i18n::tr("settings-search-no-results-description"),
                             appearance.ui_font_family(),
                             appearance.ui_font_size(),
                         )
@@ -2246,7 +2301,7 @@ impl SettingsView {
             )
             .finish(),
         )
-            .with_uniform_margin(16.)
+        .with_uniform_margin(16.)
         .with_corner_radius(CornerRadius::with_all(Radius::Pixels(4.)))
         .with_background(internal_colors::fg_overlay_1(appearance.theme()))
         .finish()

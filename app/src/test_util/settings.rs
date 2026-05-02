@@ -22,9 +22,9 @@ pub fn initialize_settings_for_tests_with_mode(
             manager::SettingsManager, AISettings, AccessibilitySettings, AliasExpansionSettings,
             AppEditorSettings, BlockVisibilitySettings, ChangelogSettings,
             CloudPreferencesSettings, CodeSettings, DebugSettings, EmacsBindingsSettings,
-            FontSettings, GPUSettings, InputModeSettings, InputSettings, NativePreferenceSettings,
-            PaneSettings, SameLinePromptBlockSettings, ScrollSettings, SelectionSettings,
-            SshSettings, ThemeSettings, VimBannerSettings,
+            FontSettings, GPUSettings, InputModeSettings, InputSettings, LanguageSettings,
+            NativePreferenceSettings, PaneSettings, SameLinePromptBlockSettings, ScrollSettings,
+            SelectionSettings, SshSettings, ThemeSettings, VimBannerSettings,
         },
         terminal::{
             general_settings::GeneralSettings, keys_settings::KeysSettings,
@@ -79,6 +79,7 @@ pub fn initialize_settings_for_tests_with_mode(
     }
 
     NativePreferenceSettings::register(app);
+    app.update(LanguageSettings::register_and_subscribe_to_events);
     SafeModeSettings::register(app);
     SameLinePromptBlockSettings::register(app);
     ScrollSettings::register(app);

@@ -1,0 +1,10 @@
+common-ok = OK
+common-cancel = Cancel
+common-apply = Apply
+common-save = Save
+common-close = Close
+common-back = Back
+common-next = Next
+common-retry = Retry
+common-delete = Delete
+common-edit = Edit

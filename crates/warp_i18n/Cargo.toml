@@ -1,0 +1,20 @@
+[package]
+name = "warp_i18n"
+edition = "2024"
+authors.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[dependencies]
+fluent-bundle.workspace = true
+schemars.workspace = true
+serde.workspace = true
+settings_value.workspace = true
+thiserror.workspace = true
+unic-langid.workspace = true
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+sys-locale.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
