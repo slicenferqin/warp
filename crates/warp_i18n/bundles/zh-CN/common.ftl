@@ -8,4 +8,5 @@ common-next = 下一步
 common-retry = 重试
 common-delete = 删除
 common-edit = 编辑
+common-paste = 粘贴
 common-default = 默认

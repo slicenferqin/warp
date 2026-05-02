@@ -366,6 +366,11 @@ fn resources_for_locale(locale: Locale) -> impl Iterator<Item = &'static BundleR
 const BUNDLED_RESOURCES: &[BundleResource] = &[
     BundleResource {
         locale: Locale::En,
+        path: "app.ftl",
+        source: include_str!("../bundles/en/app.ftl"),
+    },
+    BundleResource {
+        locale: Locale::En,
         path: "common.ftl",
         source: include_str!("../bundles/en/common.ftl"),
     },
@@ -373,6 +378,11 @@ const BUNDLED_RESOURCES: &[BundleResource] = &[
         locale: Locale::En,
         path: "settings.ftl",
         source: include_str!("../bundles/en/settings.ftl"),
+    },
+    BundleResource {
+        locale: Locale::ZhCn,
+        path: "app.ftl",
+        source: include_str!("../bundles/zh-CN/app.ftl"),
     },
     BundleResource {
         locale: Locale::ZhCn,

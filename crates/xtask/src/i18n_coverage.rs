@@ -20,23 +20,37 @@ pub struct I18nCoverageArgs {
 enum I18nCoverageScopeArg {
     /// Scan app/src/settings_view.
     SettingsView,
+    /// Scan app shell, auth, menus, update, crash recovery, and changelog UI.
+    AppShell,
     /// Scan all app/src Rust sources, excluding tests and integration helpers.
     App,
 }
 
 impl I18nCoverageScopeArg {
-    fn scan_root(self) -> &'static str {
+    fn scan_roots(self) -> &'static [&'static str] {
         match self {
-            Self::SettingsView => "app/src/settings_view",
-            Self::App => "app/src",
+            Self::SettingsView => &["app/src/settings_view"],
+            Self::AppShell => &[
+                "app/src/app_menus.rs",
+                "app/src/auth",
+                "app/src/autoupdate",
+                "app/src/changelog_model.rs",
+                "app/src/crash_recovery.rs",
+            ],
+            Self::App => &["app/src"],
         }
     }
 
     fn label(self) -> &'static str {
         match self {
             Self::SettingsView => "settings-view",
+            Self::AppShell => "app-shell",
             Self::App => "app",
         }
+    }
+
+    fn scan_roots_label(self) -> String {
+        self.scan_roots().join(", ")
     }
 }
 
@@ -55,16 +69,23 @@ struct SourceAudit {
 
 pub fn run(args: I18nCoverageArgs) -> Result<()> {
     let workspace_root = std::env::current_dir().context("failed to read current directory")?;
-    let scan_root = workspace_root.join(args.scope.scan_root());
-    if !scan_root.exists() {
-        bail!(
-            "scan root `{}` does not exist; run xtask from the workspace root",
-            scan_root.display()
-        );
+    let scan_roots: Vec<PathBuf> = args
+        .scope
+        .scan_roots()
+        .iter()
+        .map(|root| workspace_root.join(root))
+        .collect();
+    for scan_root in &scan_roots {
+        if !scan_root.exists() {
+            bail!(
+                "scan root `{}` does not exist; run xtask from the workspace root",
+                scan_root.display()
+            );
+        }
     }
 
     let resource_counts = message_counts_by_locale();
-    let source_audit = audit_source_tree(&scan_root, &workspace_root)?;
+    let source_audit = audit_source_roots(&scan_roots, &workspace_root)?;
     let candidate_count = source_audit.bare_string_candidates.len();
     let denominator = source_audit.localized_call_sites + candidate_count;
     let coverage = if denominator == 0 {
@@ -74,7 +95,7 @@ pub fn run(args: I18nCoverageArgs) -> Result<()> {
     };
 
     println!("i18n coverage audit ({})", args.scope.label());
-    println!("  scan root: {}", args.scope.scan_root());
+    println!("  scan root: {}", args.scope.scan_roots_label());
     println!("  resource messages by locale:");
     for (locale, count) in &resource_counts {
         println!("    {locale}: {count}");
@@ -159,11 +180,14 @@ fn is_message_key(key: &str) -> bool {
             .all(|ch| ch.is_ascii_lowercase() || ch.is_ascii_digit() || ch == '-')
 }
 
-fn audit_source_tree(scan_root: &Path, workspace_root: &Path) -> Result<SourceAudit> {
+fn audit_source_roots(scan_roots: &[PathBuf], workspace_root: &Path) -> Result<SourceAudit> {
     let mut audit = SourceAudit::default();
     let mut files = Vec::new();
-    collect_rust_files(scan_root, &mut files)?;
+    for scan_root in scan_roots {
+        collect_rust_files(scan_root, &mut files)?;
+    }
     files.sort();
+    files.dedup();
 
     for path in files {
         audit_source_file(&path, workspace_root, &mut audit)?;
@@ -172,10 +196,21 @@ fn audit_source_tree(scan_root: &Path, workspace_root: &Path) -> Result<SourceAu
     Ok(audit)
 }
 
-fn collect_rust_files(dir: &Path, files: &mut Vec<PathBuf>) -> Result<()> {
-    for entry in fs::read_dir(dir).with_context(|| format!("failed to read {}", dir.display()))? {
+fn collect_rust_files(path: &Path, files: &mut Vec<PathBuf>) -> Result<()> {
+    if path.is_file() {
+        let file_name = path
+            .file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or_default();
+        if path.extension().is_some_and(|ext| ext == "rs") && !should_skip_file(file_name) {
+            files.push(path.to_path_buf());
+        }
+        return Ok(());
+    }
+
+    for entry in fs::read_dir(path).with_context(|| format!("failed to read {}", path.display()))? {
         let entry =
-            entry.with_context(|| format!("failed to read entry under {}", dir.display()))?;
+            entry.with_context(|| format!("failed to read entry under {}", path.display()))?;
         let path = entry.path();
         let file_name = entry.file_name();
         let file_name = file_name.to_string_lossy();
@@ -405,14 +440,21 @@ fn is_ignored_context(line: &str) -> bool {
         "info!(",
         "warn!(",
         "error!(",
+        "anyhow!(",
+        "anyhow::anyhow!",
+        "bail!(",
+        "ensure!(",
         "panic!(",
         "assert",
         "debug_assert",
         ".expect(",
         "expect(",
+        ".context(",
+        "context(",
         "id!(",
         "FeatureFlag::",
         "ContextFlag::",
+        "Channel::",
         "TelemetryEvent::",
         "ToggleSettingActionPair::",
         "SettingActionPairDescriptions::",
@@ -431,6 +473,20 @@ fn is_ignored_context(line: &str) -> bool {
         "url_source",
         "action:",
         "value:",
+        "safe:",
+        "full:",
+        "#[deprecated",
+        "#[error(",
+        "#[serde",
+        "option_env!(",
+        "std::env::",
+        "env::var",
+        "Command::new(",
+        ".arg(",
+        ".args(",
+        ".env(",
+        "memchr::memmem::",
+        "capture_message(",
     ];
 
     let trimmed = line.trim_start();
@@ -465,6 +521,7 @@ fn is_ignored_literal(literal: &str) -> bool {
         || literal.starts_with('#')
         || literal.starts_with('[')
         || is_internal_identifier_literal(literal)
+        || is_known_internal_literal(literal)
     {
         return true;
     }
@@ -517,6 +574,77 @@ fn is_ignored_literal(literal: &str) -> bool {
             .all(|ch| ch.is_ascii_lowercase() || ch.is_ascii_digit() || ch == '_' || ch == '-')
 }
 
+fn is_known_internal_literal(literal: &str) -> bool {
+    if literal.starts_with("Cannot apply update")
+        || literal.starts_with("Don't know how to relaunch")
+        || literal.starts_with("APPIMAGE_NAME environment variable")
+        || literal.starts_with("Dropping auth redirect")
+        || literal.starts_with("Encountered an error trying")
+        || literal.starts_with("Found persisted user")
+        || literal.starts_with("Tried to ")
+        || literal.starts_with("Trying to ")
+        || literal.starts_with("Error checking")
+        || literal.starts_with("Error applying")
+        || literal.starts_with("Error cleaning")
+        || literal.starts_with("Error swapping")
+        || literal.starts_with("Error unmounting")
+        || literal.starts_with("App location is")
+        || literal.starts_with("App parent location is")
+        || literal.starts_with("New executable does not exist")
+        || literal.starts_with("Moving old executable")
+        || literal.starts_with("Received unexpected output")
+        || literal.starts_with("Verified new app code signature")
+        || literal.starts_with("Writing to a tmp file")
+        || literal.starts_with("Code signature is valid")
+        || literal.starts_with("Local, integration")
+        || literal.starts_with("No autoupdate support")
+        || literal.starts_with("Exiting process due to draw frame errors")
+        || literal.starts_with("Encountered error while waiting")
+        || literal.starts_with("setup was unable")
+        || literal.starts_with("the process cannot access")
+        || literal.starts_with("warp mutex")
+        || literal.starts_with("force-kill")
+        || literal.starts_with("there is not enough space")
+        || literal.starts_with("setprocessmitigationpolicy")
+        || literal.starts_with("sudo ")
+        || literal.starts_with("--env WARP_CHANNEL_VERSIONS_PATH")
+        || literal.starts_with("while ps ")
+    {
+        return true;
+    }
+
+    matches!(
+        literal,
+        "ExperimentId"
+            | "User"
+            | "use auth_tokens.refresh_token instead"
+            | "secure storage error"
+            | "failed to serialize or deserialize a PersistedUser struct"
+            | "Tried to update Firebase tokens without Firebase credentials"
+            | "Anonymous user initiated sign-up from unexpected AuthView variant"
+            | "Phenomenon"
+            | "Dark"
+            | "Light"
+            | "Adeberry"
+            | "could not convert unknown anonymous user type"
+            | "APPIMAGE"
+            | "Warp-Handle-DistUpgrade"
+            | "Warp-Finish-Update"
+            | "FAiled to parse apt sources directory script output"
+            | "pub:"
+            | "Contents/MacOS/old"
+            | "Contents/Info.plist"
+            | "Warp"
+            | "WarpPreview"
+            | "WarpDev"
+            | "Not implemented"
+            | "version is None"
+            | "local/integration/oss autoupdate not supported"
+            | "Windows auto-update error"
+            | "No installer path"
+    )
+}
+
 fn is_internal_identifier_literal(literal: &str) -> bool {
     !literal.contains(' ')
         && literal
@@ -524,6 +652,7 @@ fn is_internal_identifier_literal(literal: &str) -> bool {
             .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.' | ':'))
         && (literal.contains('_')
             || literal.contains("Flag.")
+            || literal.ends_with("Id")
             || literal.ends_with("Enabled")
             || literal.ends_with("Open")
             || literal.ends_with("View"))

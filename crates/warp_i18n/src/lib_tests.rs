@@ -132,6 +132,6 @@ fn bundled_resources_pass_key_parity() {
     .expect("bundled resources should be valid");
 
     assert_eq!(report.locale_count, 2);
-    assert_eq!(report.resource_count, 4);
+    assert_eq!(report.resource_count, 6);
     assert!(report.message_count > 0);
 }

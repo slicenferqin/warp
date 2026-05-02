@@ -8,4 +8,5 @@ common-next = Next
 common-retry = Retry
 common-delete = Delete
 common-edit = Edit
+common-paste = Paste
 common-default = Default

@@ -18,6 +18,7 @@ pub enum MenuItem {
 pub struct Menu {
     pub title: String,
     pub menu_items: Vec<MenuItem>,
+    is_window_menu: bool,
 }
 
 impl Menu {
@@ -25,11 +26,17 @@ impl Menu {
         Menu {
             title: title.into(),
             menu_items,
+            is_window_menu: false,
         }
     }
 
+    pub fn with_window_role(mut self) -> Self {
+        self.is_window_menu = true;
+        self
+    }
+
     pub fn is_window_menu(&self) -> bool {
-        &self.title == "Window"
+        self.is_window_menu
     }
 }
 

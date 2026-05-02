@@ -144,7 +144,12 @@ impl ChangelogModel {
 
             let mut preview_flags_string = preview_flags_vec
                 .iter()
-                .map(|flag| format!("* ***Preview-exclusive***: {flag}"))
+                .map(|flag| {
+                    warp_i18n::tr_with_args(
+                        "app-changelog-preview-exclusive",
+                        &[("flag", flag.as_str())],
+                    )
+                })
                 .join("\n");
             preview_flags_string.push('\n');
 
@@ -166,19 +171,26 @@ impl ChangelogModel {
         if markdown_sections.is_empty() {
             markdown_sections.push(MarkdownSection {
                 title: ChangelogHeader::NewFeatures.to_string(),
-                markdown: "* No notable changes this release\n".to_owned(),
+                markdown: format!("{}\n", warp_i18n::tr("app-changelog-no-notable-changes")),
             });
             if ChannelState::channel() == Channel::Dev {
-                markdown_sections[0].markdown.push_str("* *Don't forget to put changelog information in your PR description, if applicable!*\n");
+                markdown_sections[0].markdown.push_str(&format!(
+                    "{}\n",
+                    warp_i18n::tr("app-changelog-dev-reminder")
+                ));
             }
         } else if markdown_sections
             .iter()
             .all(|section| section.markdown.is_empty())
         {
             // Add this to the "New features" section (markdown_sections[0])
-            "* No notable changes this release\n".clone_into(&mut markdown_sections[0].markdown);
+            format!("{}\n", warp_i18n::tr("app-changelog-no-notable-changes"))
+                .clone_into(&mut markdown_sections[0].markdown);
             if ChannelState::channel() == Channel::Dev {
-                markdown_sections[0].markdown.push_str("* *Don't forget to put changelog information in your PR description, if applicable!*\n");
+                markdown_sections[0].markdown.push_str(&format!(
+                    "{}\n",
+                    warp_i18n::tr("app-changelog-dev-reminder")
+                ));
             }
         }
     }
@@ -212,9 +224,15 @@ pub enum ChangelogHeader {
 impl fmt::Display for ChangelogHeader {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            ChangelogHeader::NewFeatures => write!(f, "New features"),
-            ChangelogHeader::Improvements => write!(f, "Improvements"),
-            ChangelogHeader::BugFixes => write!(f, "Bug fixes"),
+            ChangelogHeader::NewFeatures => {
+                write!(f, "{}", warp_i18n::tr("app-changelog-new-features"))
+            }
+            ChangelogHeader::Improvements => {
+                write!(f, "{}", warp_i18n::tr("app-changelog-improvements"))
+            }
+            ChangelogHeader::BugFixes => {
+                write!(f, "{}", warp_i18n::tr("app-changelog-bug-fixes"))
+            }
         }
     }
 }

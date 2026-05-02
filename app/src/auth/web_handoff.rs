@@ -125,8 +125,10 @@ impl View for WebHandoffView {
 
     fn render(&self, app: &AppContext) -> Box<dyn Element> {
         let label = match &self.state {
-            HandoffState::LoadingFromHost | HandoffState::LoadingFromSessionCookie => "Loading...",
-            HandoffState::Failed => "Error authenticating - please refresh the page",
+            HandoffState::LoadingFromHost | HandoffState::LoadingFromSessionCookie => {
+                warp_i18n::tr("app-auth-loading")
+            }
+            HandoffState::Failed => warp_i18n::tr("app-auth-web-handoff-error"),
         };
 
         LoginErrorModal::new(app)

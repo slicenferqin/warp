@@ -68,7 +68,7 @@ pub fn init(app: &mut AppContext) {
         FixedBinding::custom(
             CustomAction::Paste,
             LoginSlideAction::PasteAuthUrl,
-            "Paste",
+            warp_i18n::tr("common-paste"),
             id!(LoginSlideView::ui_name()),
         ),
         FixedBinding::standard(
@@ -293,7 +293,7 @@ impl LoginSlideView {
                 },
                 ctx,
             );
-            editor.set_placeholder_text("Auth Token", ctx);
+            editor.set_placeholder_text(warp_i18n::tr("app-auth-token-placeholder"), ctx);
             editor
         });
 
@@ -462,11 +462,11 @@ impl LoginSlideView {
     /// Disclaimer prefix shown before the "Privacy Settings" link. AI is
     /// dropped from the wording on paths that don't enable AI (e.g.
     /// Terminal+Drive), since there are no AI features to opt out of there.
-    fn privacy_disclaimer_prefix(&self) -> &'static str {
+    fn privacy_disclaimer_prefix(&self) -> String {
         if self.ai_enabled {
-            "If you'd like to opt out of analytics and AI features, you can adjust your "
+            warp_i18n::tr("app-auth-opt-out-analytics-ai-inline")
         } else {
-            "If you'd like to opt out of analytics, you can adjust your "
+            warp_i18n::tr("app-auth-opt-out-analytics-inline")
         }
     }
 
@@ -477,9 +477,9 @@ impl LoginSlideView {
 
         let is_terminal = matches!(self.intention, OnboardingIntention::Terminal);
         let title_text = if is_terminal {
-            "Get started with Warp Drive"
+            warp_i18n::tr("app-auth-get-started-warp-drive")
         } else {
-            "Get started with AI"
+            warp_i18n::tr("app-auth-get-started-ai")
         };
         let title = FormattedTextElement::from_str(title_text, appearance.ui_font_family(), 36.)
             .with_color(internal_colors::text_main(
@@ -491,9 +491,9 @@ impl LoginSlideView {
             .finish();
 
         let subtitle_text = if is_terminal {
-            "Connect your account to save and share notebooks, workflows, and more across devices."
+            warp_i18n::tr("app-auth-connect-account-warp-drive")
         } else {
-            "Connect your account to enable AI-powered planning, coding, and automation."
+            warp_i18n::tr("app-auth-connect-account-ai")
         };
         let subtitle =
             FormattedTextElement::from_str(subtitle_text, appearance.ui_font_family(), 16.)
@@ -513,7 +513,7 @@ impl LoginSlideView {
         let tos_line = Flex::row()
             .with_child(
                 ui_builder
-                    .span("By continuing, you agree to Warp's ")
+                    .span(warp_i18n::tr("app-auth-by-continuing-agree"))
                     .with_style(disclaimer_styles)
                     .build()
                     .finish(),
@@ -521,7 +521,7 @@ impl LoginSlideView {
             .with_child(
                 ui_builder
                     .link(
-                        "Terms of Service".into(),
+                        warp_i18n::tr("app-auth-terms-of-service"),
                         Some(TOS_URL.into()),
                         None,
                         self.tos_mouse_state.clone(),
@@ -547,7 +547,7 @@ impl LoginSlideView {
             .with_child(
                 ui_builder
                     .link(
-                        "Privacy Settings".into(),
+                        warp_i18n::tr("app-auth-privacy-settings"),
                         None,
                         Some(Box::new(|ctx| {
                             ctx.dispatch_typed_action(LoginSlideAction::ShowPrivacySettings);
@@ -588,7 +588,7 @@ impl LoginSlideView {
         let back_button = self.back_button.render(
             appearance,
             button::Params {
-                content: button::Content::Label("Back".into()),
+                content: button::Content::Label(warp_i18n::tr("common-back").into()),
                 theme: &button::themes::Naked,
                 options: button::Options {
                     on_click: Some(Box::new(|ctx, _app, _pos| {
@@ -601,9 +601,9 @@ impl LoginSlideView {
 
         let cmd_enter = Keystroke::parse("cmdorctrl-enter").unwrap_or_default();
         let skip_label = if matches!(self.intention, OnboardingIntention::Terminal) {
-            "Disable Warp Drive"
+            warp_i18n::tr("app-auth-disable-warp-drive")
         } else {
-            "Disable AI features"
+            warp_i18n::tr("app-auth-disable-ai-features")
         };
         let skip_button = self.skip_button.render(
             appearance,
@@ -624,7 +624,7 @@ impl LoginSlideView {
         let login_button = self.login_button.render(
             appearance,
             button::Params {
-                content: button::Content::Label("Continue".into()),
+                content: button::Content::Label(warp_i18n::tr("app-auth-continue").into()),
                 theme: &button::themes::Primary,
                 options: button::Options {
                     keystroke: Some(enter),
@@ -670,7 +670,7 @@ impl LoginSlideView {
         };
 
         let title = FormattedTextElement::from_str(
-            "Sign in on your browser to continue",
+            warp_i18n::tr("app-auth-browser-continue-title"),
             appearance.ui_font_family(),
             36.,
         )
@@ -687,7 +687,7 @@ impl LoginSlideView {
                 Flex::row()
                     .with_child(
                         ui_builder
-                            .span("If your browser hasn't launched, ")
+                            .span(warp_i18n::tr("app-auth-browser-not-launched"))
                             .with_style(sub_text_styles)
                             .build()
                             .finish(),
@@ -695,7 +695,7 @@ impl LoginSlideView {
                     .with_child(
                         ui_builder
                             .link(
-                                "copy the URL".into(),
+                                warp_i18n::tr("app-auth-copy-url"),
                                 None,
                                 Some(Box::new(|ctx| {
                                     ctx.dispatch_typed_action(LoginSlideAction::CopyLoginUrl);
@@ -708,7 +708,7 @@ impl LoginSlideView {
                     )
                     .with_child(
                         ui_builder
-                            .span(" and open")
+                            .span(warp_i18n::tr("app-auth-and-open"))
                             .with_style(sub_text_styles)
                             .build()
                             .finish(),
@@ -717,7 +717,7 @@ impl LoginSlideView {
             )
             .with_child(
                 ui_builder
-                    .span("the page manually.")
+                    .span(warp_i18n::tr("app-auth-page-manually"))
                     .with_style(sub_text_styles)
                     .build()
                     .finish(),
@@ -771,7 +771,7 @@ impl LoginSlideView {
                 .with_child(
                     ui_builder
                         .link(
-                            "Click here to paste your token from the browser".into(),
+                            warp_i18n::tr("app-auth-paste-token-from-browser"),
                             None,
                             Some(Box::new(|ctx| {
                                 ctx.dispatch_typed_action(LoginSlideAction::EnterToken);
@@ -800,7 +800,7 @@ impl LoginSlideView {
         let back_button = self.browser_back_button.render(
             appearance,
             button::Params {
-                content: button::Content::Label("Back".into()),
+                content: button::Content::Label(warp_i18n::tr("common-back").into()),
                 theme: &button::themes::Naked,
                 options: button::Options {
                     on_click: Some(Box::new(|ctx, _app, _pos| {
@@ -828,15 +828,18 @@ impl LoginSlideView {
     ) -> Vec<Box<dyn Element>> {
         let theme = appearance.theme();
 
-        let title =
-            FormattedTextElement::from_str("Privacy Settings", appearance.ui_font_family(), 36.)
-                .with_color(internal_colors::text_main(
-                    theme,
-                    theme.background().into_solid(),
-                ))
-                .with_weight(Weight::Medium)
-                .with_alignment(TextAlignment::Left)
-                .finish();
+        let title = FormattedTextElement::from_str(
+            warp_i18n::tr("app-auth-privacy-settings"),
+            appearance.ui_font_family(),
+            36.,
+        )
+        .with_color(internal_colors::text_main(
+            theme,
+            theme.background().into_solid(),
+        ))
+        .with_weight(Weight::Medium)
+        .with_alignment(TextAlignment::Left)
+        .finish();
 
         let actions = PrivacySettingsActions {
             toggle_telemetry: LoginSlideAction::ToggleTelemetry,
@@ -860,7 +863,7 @@ impl LoginSlideView {
         let back_button = self.done_button.render(
             appearance,
             button::Params {
-                content: button::Content::Label("Back".into()),
+                content: button::Content::Label(warp_i18n::tr("common-back").into()),
                 theme: &button::themes::Naked,
                 options: button::Options {
                     on_click: Some(Box::new(|ctx, _app, _pos| {
@@ -898,9 +901,9 @@ impl LoginSlideView {
 
         let is_terminal = matches!(self.intention, OnboardingIntention::Terminal);
         let title_text = if is_terminal {
-            "Are you sure you want to disable Warp Drive?"
+            warp_i18n::tr("app-auth-confirm-disable-warp-drive-title")
         } else {
-            "Are you sure you want to disable AI features?"
+            warp_i18n::tr("app-auth-confirm-disable-ai-title")
         };
         let title = FormattedTextElement::from_str(title_text, appearance.ui_font_family(), 16.)
             .with_color(internal_colors::text_main(theme, dialog_surface_solid))
@@ -934,9 +937,9 @@ impl LoginSlideView {
             .finish();
 
         let body_text_str = if is_terminal {
-            "Warp Drive lets you save workflows and knowledge across devices and share them with your team. By continuing, you won't have access to the following features:"
+            warp_i18n::tr("app-auth-disable-warp-drive-description")
         } else {
-            "Warp is better with AI. By continuing, you won't have access to any of the following features:"
+            warp_i18n::tr("app-auth-disable-ai-description")
         };
         let body_text =
             FormattedTextElement::from_str(body_text_str, appearance.ui_font_family(), 14.)
@@ -989,9 +992,9 @@ impl LoginSlideView {
             .finish();
 
         let cancel_label = if is_terminal {
-            "Enable Warp Drive"
+            warp_i18n::tr("app-auth-enable-warp-drive")
         } else {
-            "Enable AI features"
+            warp_i18n::tr("app-auth-enable-ai-features")
         };
         let login_button = self.dialog_login_button.render(
             appearance,
@@ -1011,7 +1014,7 @@ impl LoginSlideView {
         let skip_confirm_button = self.dialog_skip_button.render(
             appearance,
             button::Params {
-                content: button::Content::Label("Skip for now".into()),
+                content: button::Content::Label(warp_i18n::tr("app-auth-skip-for-now").into()),
                 theme: &button::themes::Primary,
                 options: button::Options {
                     keystroke: Some(dialog_enter),
