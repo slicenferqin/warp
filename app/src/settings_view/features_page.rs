@@ -3480,7 +3480,7 @@ impl FeaturesPageView {
                         .with_child(
                             Container::new(
                                 Text::new_inline(
-                                    "Width %",
+                                    warp_i18n::tr("settings-features-keys-quake-width-percent"),
                                     appearance.ui_font_family(),
                                     appearance.ui_font_size(),
                                 )
@@ -3518,7 +3518,7 @@ impl FeaturesPageView {
                         .with_child(
                             Container::new(
                                 Text::new_inline(
-                                    "Height %",
+                                    warp_i18n::tr("settings-features-keys-quake-height-percent"),
                                     appearance.ui_font_family(),
                                     appearance.ui_font_size(),
                                 )
@@ -3596,7 +3596,7 @@ impl FeaturesPageView {
                 .with_child(
                     appearance
                         .ui_builder()
-                        .span("Autohides on loss of keyboard focus")
+                        .span(warp_i18n::tr("settings-features-keys-quake-autohide"))
                         .build()
                         .with_margin_left(5.)
                         .finish(),
@@ -3809,9 +3809,13 @@ impl FeaturesPageView {
                     Shrinkable::new(
                         2.,
                         Align::new(
-                            Text::new_inline("Keybinding", appearance.ui_font_family(), 13.)
-                                .with_color(appearance.theme().active_ui_text_color().into())
-                                .finish(),
+                            Text::new_inline(
+                                warp_i18n::tr("settings-features-keys-keybinding"),
+                                appearance.ui_font_family(),
+                                13.,
+                            )
+                            .with_color(appearance.theme().active_ui_text_color().into())
+                            .finish(),
                         )
                         .left()
                         .finish(),
@@ -3830,7 +3834,9 @@ impl FeaturesPageView {
                         } else {
                             appearance
                                 .ui_builder()
-                                .paragraph("Click to set global hotkey".to_string())
+                                .paragraph(warp_i18n::tr(
+                                    "settings-features-keys-click-global-hotkey",
+                                ))
                                 .build()
                                 .finish()
                         })
@@ -3885,7 +3891,7 @@ impl FeaturesPageView {
                 padding: Some(Coords::default().right(10.)),
                 ..Default::default()
             })
-            .with_text_label("Cancel".to_string())
+            .with_text_label(warp_i18n::tr("common-cancel"))
             .build()
             .on_click(move |ctx, _, _| {
                 ctx.dispatch_typed_action(cancel_action.clone());
@@ -3897,7 +3903,7 @@ impl FeaturesPageView {
             appearance
                 .ui_builder()
                 .button(ButtonVariant::Text, save_button_mouse_state)
-                .with_text_label("Save".to_string())
+                .with_text_label(warp_i18n::tr("common-save"))
                 .build()
                 .on_click(move |ctx, _, _| {
                     ctx.dispatch_typed_action(save_action.clone());
@@ -3921,7 +3927,7 @@ impl FeaturesPageView {
                                 2.,
                                 Align::new(
                                     Text::new_inline(
-                                        "Press new keyboard shortcut",
+                                        warp_i18n::tr("settings-features-keys-press-new-shortcut"),
                                         appearance.ui_font_family(),
                                         13.,
                                     )
@@ -3972,9 +3978,13 @@ impl FeaturesPageView {
                 }
 
                 Container::new(
-                    Text::new_inline("Change keybinding", appearance.ui_font_family(), 12.)
-                        .with_color(button_color)
-                        .finish(),
+                    Text::new_inline(
+                        warp_i18n::tr("settings-features-keys-change-keybinding"),
+                        appearance.ui_font_family(),
+                        12.,
+                    )
+                    .with_color(button_color)
+                    .finish(),
                 )
                 .with_border(border)
                 .finish()
@@ -5307,9 +5317,17 @@ impl SettingsWidget for ExtraMetaKeysWidget {
             .button_mouse_states
             .local_only_icon_tooltip_states
             .borrow_mut();
+        #[cfg(target_os = "macos")]
+        let left_meta_key_label = warp_i18n::tr("settings-features-keys-left-option-meta");
+        #[cfg(target_os = "macos")]
+        let right_meta_key_label = warp_i18n::tr("settings-features-keys-right-option-meta");
+        #[cfg(not(target_os = "macos"))]
+        let left_meta_key_label = warp_i18n::tr("settings-features-keys-left-alt-meta");
+        #[cfg(not(target_os = "macos"))]
+        let right_meta_key_label = warp_i18n::tr("settings-features-keys-right-alt-meta");
         Flex::column()
             .with_child(render_body_item::<FeaturesPageAction>(
-                EXTRA_META_KEYS_LEFT_TEXT.into(),
+                left_meta_key_label,
                 None,
                 LocalOnlyIconState::for_setting(
                     crate::terminal::keys_settings::ExtraMetaKeys::storage_key(),
@@ -5330,7 +5348,7 @@ impl SettingsWidget for ExtraMetaKeysWidget {
                 None,
             ))
             .with_child(render_body_item::<FeaturesPageAction>(
-                EXTRA_META_KEYS_RIGHT_TEXT.into(),
+                right_meta_key_label,
                 None,
                 LocalOnlyIconState::for_setting(
                     crate::terminal::keys_settings::ExtraMetaKeys::storage_key(),
@@ -5374,7 +5392,7 @@ impl SettingsWidget for GlobalHotkeyWidget {
         let ui_builder = appearance.ui_builder();
         if app.is_wayland() {
             column.add_child(render_body_item::<FeaturesPageAction>(
-                "Global hotkey:".to_owned(),
+                warp_i18n::tr("settings-features-keys-global-hotkey"),
                 None,
                 // Fine not to show local only icon state for this, as it's not a supported setting.
                 LocalOnlyIconState::Hidden,
@@ -5383,12 +5401,15 @@ impl SettingsWidget for GlobalHotkeyWidget {
                 Flex::row()
                     .with_children([
                         ui_builder
-                            .span("Not supported on Wayland. ")
+                            .span(format!(
+                                "{} ",
+                                warp_i18n::tr("settings-features-keys-wayland-unsupported")
+                            ))
                             .build()
                             .finish(),
                         ui_builder
                             .link(
-                                "See docs.".to_owned(),
+                                warp_i18n::tr("settings-features-general-see-docs"),
                                 Some(
                                     "https://docs.warp.dev/terminal/windows/global-hotkey"
                                         .to_owned(),
@@ -5410,7 +5431,7 @@ impl SettingsWidget for GlobalHotkeyWidget {
                 || {
                     render_dropdown_item(
                         appearance,
-                        "Global hotkey:",
+                        &warp_i18n::tr("settings-features-keys-global-hotkey"),
                         None,
                         None,
                         LocalOnlyIconState::for_setting(
