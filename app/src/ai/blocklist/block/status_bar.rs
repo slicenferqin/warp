@@ -1004,7 +1004,12 @@ fn render_agent_tip(tip: &AgentTip, app: &AppContext) -> Box<dyn Element> {
     let theme = appearance.theme();
 
     let tip_description = tip.description.clone();
-    let action_text = tip.action.clone().and_then(|action| action.display_text());
+    let action_label_key = tip
+        .action
+        .as_ref()
+        .and_then(|action| action.agent_tip_display_key())
+        .map(str::to_string);
+    let action_text = action_label_key.as_deref().map(warp_i18n::tr);
 
     let mut fragments = tip.to_formatted_text(app);
 
@@ -1013,7 +1018,10 @@ fn render_agent_tip(tip: &AgentTip, app: &AppContext) -> Box<dyn Element> {
         fragments.push(FormattedTextFragment::hyperlink_action(text, action));
     } else if let Some(link_target) = tip.link.clone() {
         fragments.push(FormattedTextFragment::plain_text(" "));
-        fragments.push(FormattedTextFragment::hyperlink("Learn more", link_target));
+        fragments.push(FormattedTextFragment::hyperlink(
+            warp_i18n::tr("app-ai-tip-learn-more"),
+            link_target,
+        ));
     }
 
     let formatted_text =
@@ -1050,7 +1058,7 @@ fn render_agent_tip(tip: &AgentTip, app: &AppContext) -> Box<dyn Element> {
                     send_telemetry_from_app_ctx!(
                         TelemetryEvent::AgentTipClicked {
                             tip: tip_description.clone(),
-                            click_target: action_text.clone().unwrap_or_default(),
+                            click_target: action_label_key.clone().unwrap_or_default(),
                         },
                         app
                     );

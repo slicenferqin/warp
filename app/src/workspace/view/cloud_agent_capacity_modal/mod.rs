@@ -127,12 +127,12 @@ impl CloudAgentCapacityModal {
         let neutral_bg = blended_colors::neutral_1(theme);
         let (title_text, mut explanation_text) = match self.variant {
             CloudAgentCapacityModalVariant::ConcurrentLimit => (
-                "Concurrent cloud agent limit reached",
-                "This cloud run is queued because your team has reached the maximum number of concurrent cloud agents. It will start automatically when another cloud run finishes.".to_string(),
+                warp_i18n::tr("app-ai-cloud-capacity-concurrent-limit-title"),
+                warp_i18n::tr("app-ai-cloud-capacity-concurrent-limit-description"),
             ),
             CloudAgentCapacityModalVariant::OutOfCredits => (
-                "You're out of AI credits",
-                "This cloud run stopped because your team has used all available AI credits for the current billing period.".to_string(),
+                warp_i18n::tr("app-ai-cloud-capacity-out-of-credits-title"),
+                warp_i18n::tr("app-ai-cloud-capacity-out-of-credits-description"),
             ),
         };
 
@@ -148,13 +148,14 @@ impl CloudAgentCapacityModal {
         if can_upgrade {
             let upgrade_suffix = match self.variant {
                 CloudAgentCapacityModalVariant::ConcurrentLimit => {
-                    " Upgrade your plan for more concurrent cloud agents."
+                    warp_i18n::tr("app-ai-cloud-capacity-concurrent-limit-upgrade-suffix")
                 }
                 CloudAgentCapacityModalVariant::OutOfCredits => {
-                    " Upgrade your plan to continue running cloud agents."
+                    warp_i18n::tr("app-ai-cloud-capacity-out-of-credits-upgrade-suffix")
                 }
             };
-            explanation_text.push_str(upgrade_suffix);
+            explanation_text.push(' ');
+            explanation_text.push_str(&upgrade_suffix);
         }
         let subtitle =
             FormattedTextElement::from_str(explanation_text, appearance.ui_font_family(), 14.)
@@ -168,9 +169,11 @@ impl CloudAgentCapacityModal {
 
         if can_upgrade {
             let (target_plan, agent_multiplier, extra_benefits) = match customer_type {
-                CustomerType::Build | CustomerType::BuildMax => {
-                    (StripeSubscriptionPlan::BuildBusiness, "2x", vec!["SSO"])
-                }
+                CustomerType::Build | CustomerType::BuildMax => (
+                    StripeSubscriptionPlan::BuildBusiness,
+                    "2x",
+                    vec!["app-ai-cloud-capacity-benefit-sso"],
+                ),
                 // Free tier or a legacy plan.
                 _ => (StripeSubscriptionPlan::Build, "5x", vec![]),
             };
@@ -183,19 +186,23 @@ impl CloudAgentCapacityModal {
             let pricing_text = if customer_type == CustomerType::Free {
                 if let Some(pricing) = plan_pricing {
                     let price = pricing.yearly_plan_price_per_month_usd_cents / 100;
-                    format!(
-                        "Paid plans start at ${price}/month and include everything in your free trial plus:"
+                    let price = price.to_string();
+                    warp_i18n::tr_with_args(
+                        "app-ai-cloud-capacity-paid-plans-start-with-price",
+                        &[("price", price.as_str())],
                     )
                 } else {
-                    "Paid plans include everything in your free trial plus:".to_string()
+                    warp_i18n::tr("app-ai-cloud-capacity-paid-plans-start")
                 }
             } else if let Some(pricing) = plan_pricing {
                 let price = pricing.yearly_plan_price_per_month_usd_cents / 100;
-                format!(
-                    "The Business plan starts at ${price}/month and includes everything on your current plan plus:"
+                let price = price.to_string();
+                warp_i18n::tr_with_args(
+                    "app-ai-cloud-capacity-business-plan-starts-with-price",
+                    &[("price", price.as_str())],
                 )
             } else {
-                "The Business plan includes everything on your current plan plus:".to_string()
+                warp_i18n::tr("app-ai-cloud-capacity-business-plan-starts")
             };
 
             let pricing = FormattedTextElement::new(
@@ -213,19 +220,26 @@ impl CloudAgentCapacityModal {
             // Credits text from plan pricing
             let credits_text = if let Some(limit) = plan_pricing.and_then(|plan| plan.request_limit)
             {
-                format!("{} AI credits per month", limit.separate_with_commas())
+                let limit = limit.separate_with_commas();
+                warp_i18n::tr_with_args(
+                    "app-ai-cloud-capacity-benefit-ai-credits",
+                    &[("limit", limit.as_str())],
+                )
             } else {
-                "Extended AI credits per month".to_string()
+                warp_i18n::tr("app-ai-cloud-capacity-benefit-extended-ai-credits")
             };
 
             // Benefits list based on plan type
             let mut benefits = vec![
-                format!("{} the number of concurrent cloud agents", agent_multiplier),
+                warp_i18n::tr_with_args(
+                    "app-ai-cloud-capacity-benefit-concurrent-agents",
+                    &[("agent_multiplier", agent_multiplier)],
+                ),
                 credits_text,
-                "Bring your own API key".to_string(),
+                warp_i18n::tr("app-ai-cloud-capacity-benefit-bring-api-key"),
             ];
             for extra in extra_benefits {
-                benefits.push(extra.to_string());
+                benefits.push(warp_i18n::tr(extra));
             }
 
             let mut benefits_column =
@@ -277,9 +291,9 @@ impl CloudAgentCapacityModal {
         let content = content.finish();
         let cta_button = if show_cta {
             let cta_button_label = if can_upgrade {
-                "Upgrade plan"
+                warp_i18n::tr("app-ai-cloud-capacity-upgrade-plan")
             } else {
-                "Open billing"
+                warp_i18n::tr("app-ai-cloud-capacity-open-billing")
             };
             Some(
                 appearance
@@ -294,7 +308,7 @@ impl CloudAgentCapacityModal {
                         width: Some(296.),
                         ..Default::default()
                     })
-                    .with_centered_text_label(cta_button_label.to_string())
+                    .with_centered_text_label(cta_button_label)
                     .build()
                     .with_cursor(Cursor::PointingHand)
                     .on_click(|ctx, _, _| {

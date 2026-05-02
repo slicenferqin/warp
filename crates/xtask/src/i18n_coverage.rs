@@ -24,6 +24,8 @@ enum I18nCoverageScopeArg {
     AppShell,
     /// Scan code review UI.
     CodeReview,
+    /// Scan first-pass AI entry, right panel, conversation list, and loading UI.
+    AiEntry,
     /// Scan all app/src Rust sources, excluding tests and integration helpers.
     App,
 }
@@ -40,6 +42,15 @@ impl I18nCoverageScopeArg {
                 "app/src/crash_recovery.rs",
             ],
             Self::CodeReview => &["app/src/code_review"],
+            Self::AiEntry => &[
+                "app/src/workspace/view/right_panel.rs",
+                "app/src/workspace/view/cloud_agent_capacity_modal",
+                "app/src/workspace/view/conversation_list",
+                "app/src/workspace/delete_conversation_confirmation_dialog.rs",
+                "app/src/ai/onboarding.rs",
+                "app/src/ai/agent_tips.rs",
+                "app/src/ai/loading",
+            ],
             Self::App => &["app/src"],
         }
     }
@@ -49,6 +60,7 @@ impl I18nCoverageScopeArg {
             Self::SettingsView => "settings-view",
             Self::AppShell => "app-shell",
             Self::CodeReview => "code-review",
+            Self::AiEntry => "ai-entry",
             Self::App => "app",
         }
     }
@@ -619,6 +631,15 @@ fn is_ignored_literal(literal: &str) -> bool {
             | "Right Option key is Meta"
             | "Left Alt key is Meta"
             | "Right Alt key is Meta"
+            | "FN"
+            | "{display_path}:"
+            | "no repo is selected for code review"
+            | "session cwd is unavailable or not local"
+            | "session cwd is not inside selected repo"
+            | "AI is disabled for Warp review destinations"
+            | "terminal is currently executing a command"
+            | "terminal input box is not visible"
+            | "No active code review view is associated with the current tab/repo selection"
     ) {
         return true;
     }
