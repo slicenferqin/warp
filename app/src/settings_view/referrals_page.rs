@@ -1,4 +1,3 @@
-use lazy_static::lazy_static;
 use markdown_parser::{FormattedText, FormattedTextFragment, FormattedTextLine};
 use pathfinder_color::ColorU;
 use pathfinder_geometry::vector::Vector2F;
@@ -42,30 +41,28 @@ use warpui::{
 
 const HEADER_FONT_SIZE: f32 = 18.;
 const HEADER_MARGIN_BOTTOM: f32 = 32.;
-const HEADER_TEXT: &str = "Invite a friend to Warp";
-const ANONYMOUS_USER_HEADER_TEXT: &str = "Sign up to participate in Warp's referral program";
+const HEADER_TEXT_KEY: &str = "settings-referrals-header";
+const ANONYMOUS_USER_HEADER_TEXT_KEY: &str = "settings-referrals-anonymous-header";
 
 const INVITE_FIELD_LABEL_BOTTOM_MARGIN: f32 = 8.;
 
 const LINK_BOTTOM_MARGIN: f32 = 12.;
 const LINK_TEXT_PADDING: f32 = 10.;
 const LINK_CORNER_RADIUS: Radius = Radius::Pixels(4.);
-const LINK_ERROR_TEXT: &str = "Failed to load referral code.";
-
 const BUTTON_WIDTH: f32 = 98.;
 const BUTTON_HEIGHT: f32 = 36.;
 const BUTTON_LEFT_MARGIN: f32 = 8.;
 const BUTTON_FONT_SIZE: f32 = 12.;
-const LINK_BUTTON_TEXT: &str = "Copy link";
-const EMAIL_BUTTON_TEXT: &str = "Send";
-const EMAIL_BUTTON_SENDING_TEXT: &str = "Sending...";
-const LOADING_TEXT: &str = "Loading...";
+const LINK_BUTTON_TEXT_KEY: &str = "settings-referrals-copy-link";
+const EMAIL_BUTTON_TEXT_KEY: &str = "settings-referrals-send";
+const EMAIL_BUTTON_SENDING_TEXT_KEY: &str = "settings-referrals-sending";
+const LOADING_TEXT_KEY: &str = "settings-referrals-loading";
 
-const LINK_COPIED_TOAST: &str = "Link copied.";
-const EMAIL_SUCCESS_TOAST: &str = "Successfully sent emails.";
-const EMAIL_FAILURE_TOAST: &str = "Failed to send emails. Please try again.";
+const LINK_COPIED_TOAST_KEY: &str = "settings-referrals-link-copied";
+const EMAIL_SUCCESS_TOAST_KEY: &str = "settings-referrals-email-success";
+const EMAIL_FAILURE_TOAST_KEY: &str = "settings-referrals-email-failure";
 
-const REWARD_INTRO: &str = "Get exclusive Warp goodies when you refer someone*";
+const REWARD_INTRO_KEY: &str = "settings-referrals-reward-intro";
 const REWARD_INTRO_FONT_SIZE: f32 = 14.;
 const REWARD_SECTION_VERTICAL_SPACING: f32 = 24.;
 
@@ -87,8 +84,8 @@ const METER_TOP_MARGIN: f32 = 16.;
 const METER_RIGHT_MARGIN: f32 = 12.;
 
 const CLAIMED_REFERRALS_LABEL_HORIZONTAL_SPACING: f32 = 4.;
-const CLAIMED_REFERRALS_COUNT_LABEL_SINGULAR: &str = "Current referral";
-const CLAIMED_REFERRALS_COUNT_LABEL_PLURAL: &str = "Current referrals";
+const CLAIMED_REFERRALS_COUNT_LABEL_SINGULAR_KEY: &str = "settings-referrals-current-referral";
+const CLAIMED_REFERRALS_COUNT_LABEL_PLURAL_KEY: &str = "settings-referrals-current-referrals";
 const CLAIMED_REFERRALS_LABEL_WIDTH: f32 = 52.;
 const CLAIMED_REFERRALS_LABEL_FONT_SIZE: f32 = 14.;
 const CLAIMED_REFERRALS_COUNT_FONT_SIZE: f32 = 48.;
@@ -96,11 +93,10 @@ const CLAIMED_REFERRAL_COUNT_LEFT_MARGIN: f32 = 40.;
 
 const CLAIMED_REFERRAL_CLIP: usize = 999;
 
-const TERMS_LINK_TEXT: &str = "Certain restrictions apply.";
+const TERMS_LINK_TEXT_KEY: &str = "settings-referrals-terms-link";
 const TERMS_URL: &str =
     "https://docs.warp.dev/support-and-community/community/refer-a-friend#referral-program-terms-and-conditions";
-const TERMS_CONTACT_TEXT: &str =
-    " If you have any questions about the referral program, please contact referrals@warp.dev.";
+const TERMS_CONTACT_TEXT_KEY: &str = "settings-referrals-terms-contact";
 
 enum ApiState {
     Loading,
@@ -145,69 +141,67 @@ struct Reward {
     icon_path: &'static str,
     icon_height: f32,
     icon_width: f32,
-    label: String,
+    label_key: &'static str,
 }
 
-lazy_static! {
-    static ref REWARDS: Vec<Reward> = vec![
-        Reward {
-            required_referral_count: 1,
-            icon_path: "bundled/svg/referral-theme.svg",
-            icon_width: 64.,
-            icon_height: 64.,
-            label: "Exclusive theme".to_owned(),
-        },
-        Reward {
-            required_referral_count: 5,
-            icon_path: "bundled/svg/referral-keycaps.svg",
-            icon_width: 56.,
-            icon_height: 56.,
-            label: "Keycaps + stickers".to_owned(),
-        },
-        Reward {
-            required_referral_count: 10,
-            icon_path: "bundled/svg/referral-tshirt.svg",
-            icon_width: 64.,
-            icon_height: 64.,
-            label: "T-shirt".to_owned(),
-        },
-        Reward {
-            required_referral_count: 20,
-            icon_path: "bundled/svg/referral-notebook.svg",
-            icon_width: 64.,
-            icon_height: 64.,
-            label: "Notebook".to_owned(),
-        },
-        Reward {
-            required_referral_count: 35,
-            icon_path: "bundled/svg/referral-hat.svg",
-            icon_width: 64.,
-            icon_height: 64.,
-            label: "Baseball cap".to_owned(),
-        },
-        Reward {
-            required_referral_count: 50,
-            icon_path: "bundled/svg/referral-hoodie.svg",
-            icon_width: 64.,
-            icon_height: 64.,
-            label: "Hoodie".to_owned(),
-        },
-        Reward {
-            required_referral_count: 75,
-            icon_path: "bundled/svg/referral-hydroflask.svg",
-            icon_width: 48.,
-            icon_height: 48.,
-            label: "Premium Hydro Flask".to_owned(),
-        },
-        Reward {
-            required_referral_count: 100,
-            icon_path: "bundled/svg/referral-backpack.svg",
-            icon_width: 50.,
-            icon_height: 50.,
-            label: "Backpack".to_owned(),
-        },
-    ];
-}
+const REWARDS: &[Reward] = &[
+    Reward {
+        required_referral_count: 1,
+        icon_path: "bundled/svg/referral-theme.svg",
+        icon_width: 64.,
+        icon_height: 64.,
+        label_key: "settings-referrals-reward-theme",
+    },
+    Reward {
+        required_referral_count: 5,
+        icon_path: "bundled/svg/referral-keycaps.svg",
+        icon_width: 56.,
+        icon_height: 56.,
+        label_key: "settings-referrals-reward-keycaps",
+    },
+    Reward {
+        required_referral_count: 10,
+        icon_path: "bundled/svg/referral-tshirt.svg",
+        icon_width: 64.,
+        icon_height: 64.,
+        label_key: "settings-referrals-reward-tshirt",
+    },
+    Reward {
+        required_referral_count: 20,
+        icon_path: "bundled/svg/referral-notebook.svg",
+        icon_width: 64.,
+        icon_height: 64.,
+        label_key: "settings-referrals-reward-notebook",
+    },
+    Reward {
+        required_referral_count: 35,
+        icon_path: "bundled/svg/referral-hat.svg",
+        icon_width: 64.,
+        icon_height: 64.,
+        label_key: "settings-referrals-reward-hat",
+    },
+    Reward {
+        required_referral_count: 50,
+        icon_path: "bundled/svg/referral-hoodie.svg",
+        icon_width: 64.,
+        icon_height: 64.,
+        label_key: "settings-referrals-reward-hoodie",
+    },
+    Reward {
+        required_referral_count: 75,
+        icon_path: "bundled/svg/referral-hydroflask.svg",
+        icon_width: 48.,
+        icon_height: 48.,
+        label_key: "settings-referrals-reward-hydroflask",
+    },
+    Reward {
+        required_referral_count: 100,
+        icon_path: "bundled/svg/referral-backpack.svg",
+        icon_width: 50.,
+        icon_height: 50.,
+        label_key: "settings-referrals-reward-backpack",
+    },
+];
 
 impl ReferralsPageView {
     pub fn new(referrals_client: Arc<dyn ReferralsClient>, ctx: &mut ViewContext<Self>) -> Self {
@@ -223,7 +217,7 @@ impl ReferralsPageView {
             me.handle_editor_event(event, ctx);
         });
 
-        let page = PageType::new_monolith(ReferralsWidget::default(), Some(HEADER_TEXT), true);
+        let page = PageType::new_monolith(ReferralsWidget::default(), Some(HEADER_TEXT_KEY), true);
         Self {
             page,
             referrals_client,
@@ -287,7 +281,7 @@ impl ReferralsPageView {
                 ctx.clipboard()
                     .write(ClipboardContent::plain_text(referral_info.url.to_string()));
                 ctx.emit(ReferralsPageEvent::ShowToast {
-                    message: LINK_COPIED_TOAST.to_owned(),
+                    message: warp_i18n::tr(LINK_COPIED_TOAST_KEY),
                     flavor: ToastFlavor::Default,
                 });
             }
@@ -337,17 +331,17 @@ impl ReferralsPageView {
                 });
                 safe_info!(
                     safe: ("Successfully sent {} invites", successful.len()),
-                    full: ("Successfully sent invites to: {:?}", successful)
+                    full: ("{:?}", successful)
                 );
                 ctx.emit(ReferralsPageEvent::ShowToast {
-                    message: EMAIL_SUCCESS_TOAST.to_owned(),
+                    message: warp_i18n::tr(EMAIL_SUCCESS_TOAST_KEY),
                     flavor: ToastFlavor::Success,
                 });
             }
             Err(err) => {
                 log::error!("Error sending referral emails: {err}");
                 ctx.emit(ReferralsPageEvent::ShowToast {
-                    message: EMAIL_FAILURE_TOAST.to_owned(),
+                    message: warp_i18n::tr(EMAIL_FAILURE_TOAST_KEY),
                     flavor: ToastFlavor::Error,
                 });
             }
@@ -452,9 +446,9 @@ impl From<ViewHandle<ReferralsPageView>> for SettingsPageViewHandle {
 }
 #[derive(Error, Debug)]
 enum EmailValidationError {
-    #[error("Email is empty")]
+    #[error("email_empty")]
     Empty,
-    #[error("Email is invalid: {0}")]
+    #[error("email_invalid")]
     Invalid(String),
 }
 
@@ -462,10 +456,11 @@ impl EmailValidationError {
     /// The user-readable error descriptions.
     fn ui_message(&self) -> String {
         match self {
-            EmailValidationError::Empty => "Please enter an email.".to_owned(),
-            EmailValidationError::Invalid(invalid_email) => {
-                format!("Please ensure the following email is valid: {invalid_email}")
-            }
+            EmailValidationError::Empty => warp_i18n::tr("settings-referrals-email-empty"),
+            EmailValidationError::Invalid(invalid_email) => warp_i18n::tr_with_args(
+                "settings-referrals-email-invalid",
+                &[("email", invalid_email.as_str())],
+            ),
         }
     }
 }
@@ -526,8 +521,8 @@ impl ReferralsWidget {
     ) -> Box<dyn Element> {
         let (link_text, button_enabled) = match &view.api_state {
             ApiState::Ready { referral_info, .. } => (referral_info.url.clone(), true),
-            ApiState::Loading => (LOADING_TEXT.into(), false),
-            ApiState::Failed => (LINK_ERROR_TEXT.into(), false),
+            ApiState::Loading => (warp_i18n::tr(LOADING_TEXT_KEY), false),
+            ApiState::Failed => (warp_i18n::tr("settings-referrals-link-load-error"), false),
         };
         let theme = appearance.theme();
 
@@ -563,7 +558,7 @@ impl ReferralsWidget {
                 )
                 .with_child(self.render_button(
                     button_enabled,
-                    LINK_BUTTON_TEXT,
+                    warp_i18n::tr(LINK_BUTTON_TEXT_KEY),
                     self.copy_link_mouse_state.clone(),
                     |ctx, _, _| ctx.dispatch_typed_action(ReferralsPageAction::CopyLink),
                     appearance,
@@ -584,12 +579,12 @@ impl ReferralsWidget {
             ApiState::Ready {
                 email_state: SendEmailState::Idle,
                 ..
-            } => (EMAIL_BUTTON_TEXT, true),
+            } => (warp_i18n::tr(EMAIL_BUTTON_TEXT_KEY), true),
             ApiState::Ready {
                 email_state: SendEmailState::Sending,
                 ..
-            } => (EMAIL_BUTTON_SENDING_TEXT, false),
-            _ => (EMAIL_BUTTON_TEXT, false),
+            } => (warp_i18n::tr(EMAIL_BUTTON_SENDING_TEXT_KEY), false),
+            _ => (warp_i18n::tr(EMAIL_BUTTON_TEXT_KEY), false),
         };
 
         Flex::row()
@@ -626,12 +621,14 @@ impl ReferralsWidget {
     ) -> Box<dyn Element> {
         Flex::column()
             .with_child(
-                Container::new(self.render_label("Link", appearance))
-                    .with_padding_top(PAGE_PADDING)
-                    .finish(),
+                Container::new(
+                    self.render_label(warp_i18n::tr("settings-referrals-link"), appearance),
+                )
+                .with_padding_top(PAGE_PADDING)
+                .finish(),
             )
             .with_child(self.render_link_row(view, appearance))
-            .with_child(self.render_label("Email", appearance))
+            .with_child(self.render_label(warp_i18n::tr("settings-referrals-email"), appearance))
             .with_child(self.render_email_row(view, appearance))
             .finish()
     }
@@ -657,7 +654,7 @@ impl ReferralsWidget {
                 self.sign_up_button_mouse_state.clone(),
             )
             .with_style(button_styles)
-            .with_text_label("Sign up".to_owned())
+            .with_text_label(warp_i18n::tr("settings-referrals-sign-up"))
             .build()
             .on_click(move |ctx, _, _| {
                 ctx.dispatch_typed_action(ReferralsPageAction::SignupAnonymousUser);
@@ -669,7 +666,7 @@ impl ReferralsWidget {
                 Container::new(
                     appearance
                         .ui_builder()
-                        .span(ANONYMOUS_USER_HEADER_TEXT)
+                        .span(warp_i18n::tr(ANONYMOUS_USER_HEADER_TEXT_KEY))
                         .with_style(UiComponentStyles {
                             font_size: Some(HEADER_FONT_SIZE),
                             ..Default::default()
@@ -688,7 +685,7 @@ impl ReferralsWidget {
     fn render_button<F>(
         &self,
         button_enabled: bool,
-        button_text: &str,
+        button_text: String,
         mouse_state_handle: MouseStateHandle,
         on_click: F,
         appearance: &Appearance,
@@ -699,7 +696,7 @@ impl ReferralsWidget {
         let button = appearance
             .ui_builder()
             .button(ButtonVariant::Accent, mouse_state_handle)
-            .with_centered_text_label(button_text.to_owned())
+            .with_centered_text_label(button_text)
             .with_style(UiComponentStyles {
                 font_size: Some(BUTTON_FONT_SIZE),
                 font_weight: Some(Weight::Semibold),
@@ -741,7 +738,7 @@ impl ReferralsWidget {
             Container::new(
                 appearance
                     .ui_builder()
-                    .span(REWARD_INTRO)
+                    .span(warp_i18n::tr(REWARD_INTRO_KEY))
                     .with_style(UiComponentStyles {
                         font_size: Some(REWARD_INTRO_FONT_SIZE),
                         ..Default::default()
@@ -781,8 +778,14 @@ impl ReferralsWidget {
                     FormattedTextElement::new(
                         FormattedText::new([FormattedTextLine::Line(vec![
                             FormattedTextFragment::plain_text("*"),
-                            FormattedTextFragment::hyperlink(TERMS_LINK_TEXT, TERMS_URL),
-                            FormattedTextFragment::plain_text(TERMS_CONTACT_TEXT),
+                            FormattedTextFragment::hyperlink(
+                                warp_i18n::tr(TERMS_LINK_TEXT_KEY),
+                                TERMS_URL,
+                            ),
+                            FormattedTextFragment::plain_text(format!(
+                                " {}",
+                                warp_i18n::tr(TERMS_CONTACT_TEXT_KEY)
+                            )),
                         ])]),
                         12.,
                         appearance.ui_font_family(),
@@ -874,7 +877,7 @@ impl ReferralsWidget {
                 Container::new(
                     appearance
                         .ui_builder()
-                        .span(reward.label.clone())
+                        .span(warp_i18n::tr(reward.label_key))
                         .with_style(UiComponentStyles {
                             font_color: Some(label_color),
                             font_weight: label_font_weight,
@@ -1064,8 +1067,8 @@ impl ReferralsWidget {
         };
 
         let current_referrals_label = match claimed_count {
-            1 => CLAIMED_REFERRALS_COUNT_LABEL_SINGULAR,
-            _ => CLAIMED_REFERRALS_COUNT_LABEL_PLURAL,
+            1 => warp_i18n::tr(CLAIMED_REFERRALS_COUNT_LABEL_SINGULAR_KEY),
+            _ => warp_i18n::tr(CLAIMED_REFERRALS_COUNT_LABEL_PLURAL_KEY),
         };
 
         Some(
@@ -1093,7 +1096,7 @@ impl ReferralsWidget {
                     ConstrainedBox::new(
                         appearance
                             .ui_builder()
-                            .wrappable_text(current_referrals_label.to_string(), true)
+                            .wrappable_text(current_referrals_label, true)
                             .with_style(UiComponentStyles {
                                 font_size: Some(CLAIMED_REFERRALS_LABEL_FONT_SIZE),
                                 font_color: Some(blended_colors::text_sub(

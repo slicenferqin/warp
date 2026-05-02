@@ -53,9 +53,9 @@ impl View for TransferOwnershipConfirmationModal {
         let email = self.new_owner_email.as_deref().unwrap_or_default();
 
         let description_text = Text::new(
-            format!(
-                "Are you sure you want to transfer team ownership to {}? You will no longer be the owner and will not be able to take any administrative actions for this team.",
-                email
+            warp_i18n::tr_with_args(
+                "settings-transfer-ownership-description",
+                &[("email", email)],
             ),
             appearance.ui_font_family(),
             14.,
@@ -75,7 +75,7 @@ impl View for TransferOwnershipConfirmationModal {
                 appearance
                     .ui_builder()
                     .button(ButtonVariant::Secondary, self.cancel_mouse_state.clone())
-                    .with_text_label("Cancel".to_string())
+                    .with_text_label(warp_i18n::tr("common-cancel"))
                     .with_style(button_style)
                     .build()
                     .on_click(|ctx, _, _| {
@@ -88,7 +88,7 @@ impl View for TransferOwnershipConfirmationModal {
                     appearance
                         .ui_builder()
                         .button(ButtonVariant::Accent, self.confirm_mouse_state.clone())
-                        .with_text_label("Transfer".to_string())
+                        .with_text_label(warp_i18n::tr("settings-transfer-ownership-confirm"))
                         .with_style(button_style)
                         .build()
                         .on_click(|ctx, _, _| {

@@ -76,11 +76,6 @@ const ITEM_VERTICAL_SPACING: f32 = 24.;
 const BUILT_IN_TEXT_INPUT_MARGIN: f32 = 10.;
 const SPACE_AFTER_TEXT_INPUT: f32 = ITEM_VERTICAL_SPACING - BUILT_IN_TEXT_INPUT_MARGIN;
 
-const SSH_TMUX_WARPIFICATION_DESCRIPTION: &str = "The tmux ssh wrapper works in many situations where the default one does not, but may require you to hit a button to warpify. Takes effect in new tabs.";
-
-const SSH_EXTENSION_INSTALL_MODE_DESCRIPTION: &str =
-    "Controls the installation behavior for Warp's SSH extension when a remote host doesn't have it installed.";
-
 /// This page lets users configure when they get asked to warpify a session. Some shell commands
 /// are recognized by default. Users can add new shell commands, or prevent the default ones from
 /// asking. Users can also enable the SSH wrapper, and add hosts to a denylist.
@@ -122,7 +117,10 @@ impl WarpifyPageView {
         let add_added_commands_editor = ctx.add_typed_action_view(|ctx| {
             let mut input =
                 SubmittableTextInput::new(ctx).validate_on_edit(|regex| Regex::new(regex).is_ok());
-            input.set_placeholder_text("command (supports regex)", ctx);
+            input.set_placeholder_text(
+                warp_i18n::tr("settings-warpify-command-regex-placeholder"),
+                ctx,
+            );
             input
         });
 
@@ -133,7 +131,10 @@ impl WarpifyPageView {
 
         let add_denylisted_commands_editor = ctx.add_typed_action_view(|ctx| {
             let mut input = SubmittableTextInput::new(ctx);
-            input.set_placeholder_text("command (supports regex)", ctx);
+            input.set_placeholder_text(
+                warp_i18n::tr("settings-warpify-command-regex-placeholder"),
+                ctx,
+            );
             input
         });
 
@@ -144,7 +145,10 @@ impl WarpifyPageView {
 
         let add_denylisted_ssh_editor = ctx.add_typed_action_view(|ctx| {
             let mut input = SubmittableTextInput::new(ctx);
-            input.set_placeholder_text("host (supports regex)", ctx);
+            input.set_placeholder_text(
+                warp_i18n::tr("settings-warpify-host-regex-placeholder"),
+                ctx,
+            );
             input
         });
 
@@ -174,8 +178,11 @@ impl WarpifyPageView {
     fn build_page(ctx: &mut ViewContext<Self>) -> PageType<Self> {
         let mut categories = vec![
             Category::new("", vec![Box::new(TitleWidget::default())]),
-            Category::new("Subshells", vec![Box::new(SubshellsWidget::default())])
-                .with_subtitle("Subshells supported: bash, zsh, and fish."),
+            Category::new(
+                "settings-warpify-subshells",
+                vec![Box::new(SubshellsWidget::default())],
+            )
+            .with_subtitle("settings-warpify-subshells-subtitle"),
         ];
 
         let warpify_settings = WarpifySettings::as_ref(ctx);
@@ -185,8 +192,8 @@ impl WarpifyPageView {
                 .is_supported_on_current_platform()
         {
             categories.push(
-                Category::new("SSH", vec![Box::new(SSHWidget::default())])
-                    .with_subtitle("Warpify your interactive SSH sessions."),
+                Category::new("settings-warpify-ssh", vec![Box::new(SSHWidget::default())])
+                    .with_subtitle("settings-warpify-ssh-subtitle"),
             );
         }
         PageType::new_categorized(categories, None)
@@ -314,10 +321,10 @@ impl Entity for WarpifyPageView {
     type Event = SettingsPageEvent;
 }
 
-fn build_sub_sub_title(title: &str, appearance: &Appearance) -> Container {
+fn build_sub_sub_title(title: String, appearance: &Appearance) -> Container {
     appearance
         .ui_builder()
-        .span(title.to_string())
+        .span(title)
         .with_style(UiComponentStyles {
             font_size: Some(CONTENT_FONT_SIZE),
             ..Default::default()
@@ -327,6 +334,18 @@ fn build_sub_sub_title(title: &str, appearance: &Appearance) -> Container {
 
 const SSH_EXTENSION_DROPDOWN_WIDTH: f32 = 250.;
 
+fn ssh_extension_install_mode_label(mode: SshExtensionInstallMode) -> String {
+    match mode {
+        SshExtensionInstallMode::AlwaysAsk => warp_i18n::tr("settings-warpify-ssh-mode-always-ask"),
+        SshExtensionInstallMode::AlwaysInstall => {
+            warp_i18n::tr("settings-warpify-ssh-mode-always-install")
+        }
+        SshExtensionInstallMode::NeverInstall => {
+            warp_i18n::tr("settings-warpify-ssh-mode-never-install")
+        }
+    }
+}
+
 impl WarpifyPageView {
     fn create_ssh_extension_install_mode_dropdown(
         ctx: &mut ViewContext<Self>,
@@ -334,7 +353,7 @@ impl WarpifyPageView {
         let items: Vec<DropdownItem<WarpifyPageAction>> = SshExtensionInstallMode::iter()
             .map(|mode| {
                 DropdownItem::new(
-                    mode.display_name(),
+                    ssh_extension_install_mode_label(mode),
                     WarpifyPageAction::SetSshExtensionInstallMode(mode),
                 )
             })
@@ -371,7 +390,7 @@ impl WarpifyPageView {
         T: View,
     >(
         &self,
-        title: &str,
+        title: String,
         patterns: &[ListItem],
         mouse_states: &[MouseStateHandle],
         create_action: F,
@@ -532,12 +551,12 @@ struct TitleWidget {
 impl TitleWidget {
     fn render_top_of_page(&self, appearance: &Appearance, _app: &AppContext) -> Box<dyn Element> {
         let warpify_description = vec![
-            FormattedTextFragment::plain_text(
-                "Configure whether Warp attempts to “Warpify” (add support for blocks, \
-                    input modes, etc) certain shells. ",
-            ),
+            FormattedTextFragment::plain_text(format!(
+                "{} ",
+                warp_i18n::tr("settings-warpify-description")
+            )),
             FormattedTextFragment::hyperlink(
-                "Learn more",
+                warp_i18n::tr("settings-warpify-learn-more"),
                 "https://docs.warp.dev/terminal/warpify/subshells",
             ),
         ];
@@ -557,7 +576,11 @@ impl TitleWidget {
         .finish();
 
         Flex::column()
-            .with_child(render_page_title("Warpify", HEADER_FONT_SIZE, appearance))
+            .with_child(render_page_title(
+                &warp_i18n::tr("settings-warpify-title"),
+                HEADER_FONT_SIZE,
+                appearance,
+            ))
             .with_child(warpify_description)
             .finish()
     }
@@ -598,7 +621,7 @@ impl SubshellsWidget {
 
         column.add_child(
             view.build_input_list(
-                "Added commands",
+                warp_i18n::tr("settings-warpify-added-commands"),
                 &warpify_settings.added_subshell_commands,
                 &view.remove_added_command_button_states,
                 WarpifyPageAction::RemoveAddedCommand,
@@ -610,7 +633,7 @@ impl SubshellsWidget {
 
         column.add_child(
             view.build_input_list(
-                "Denylisted commands",
+                warp_i18n::tr("settings-warpify-denylisted-commands"),
                 &warpify_settings.subshell_command_denylist,
                 &view.remove_denylisted_command_button_states,
                 WarpifyPageAction::RemoveDenylistedCommand,
@@ -683,7 +706,7 @@ impl SettingsWidget for SSHWidget {
             &WarpifySettings::as_ref(app).enable_ssh_warpification,
             move || {
                 render_body_item::<WarpifyPageAction>(
-                    "Warpify SSH Sessions".into(),
+                    warp_i18n::tr("settings-warpify-ssh-sessions"),
                     None,
                     LocalOnlyIconState::for_setting(
                         EnableSshWarpification::storage_key(),
@@ -718,8 +741,13 @@ impl SettingsWidget for SSHWidget {
                 move || {
                     Container::new(render_dropdown_item(
                         appearance,
-                        "Install SSH extension",
-                        Some(SSH_EXTENSION_INSTALL_MODE_DESCRIPTION),
+                        &warp_i18n::tr("settings-warpify-install-ssh-extension"),
+                        Some(
+                            warp_i18n::tr(
+                                "settings-warpify-ssh-extension-install-mode-description",
+                            )
+                            .as_str(),
+                        ),
                         None,
                         LocalOnlyIconState::for_setting(
                             SshExtensionInstallModeSetting::storage_key(),
@@ -743,7 +771,7 @@ impl SettingsWidget for SSHWidget {
                 let mut column = Flex::column();
 
                 column.add_child(render_body_item::<WarpifyPageAction>(
-                    "Use Tmux Warpification".into(),
+                    warp_i18n::tr("settings-warpify-use-tmux-warpification"),
                     Some(AdditionalInfo {
                         mouse_state: self.additional_info_mouse_state.clone(),
                         on_click_action: Some(WarpifyPageAction::OpenUrl(
@@ -778,7 +806,7 @@ impl SettingsWidget for SSHWidget {
 
                 column.add_child(
                     ui_builder
-                        .paragraph(SSH_TMUX_WARPIFICATION_DESCRIPTION.to_owned())
+                        .paragraph(warp_i18n::tr("settings-warpify-tmux-description"))
                         .with_style(UiComponentStyles {
                             font_color: Some(description_text_color.into_solid()),
                             margin: Some(
@@ -796,7 +824,7 @@ impl SettingsWidget for SSHWidget {
                     let warpify_settings = WarpifySettings::as_ref(app);
                     column.add_child(
                         view.build_input_list(
-                            "Denylisted hosts",
+                            warp_i18n::tr("settings-warpify-denylisted-hosts"),
                             &warpify_settings.ssh_hosts_denylist,
                             &view.remove_denylisted_ssh_button_states,
                             WarpifyPageAction::RemoveDenylistedSshHost,

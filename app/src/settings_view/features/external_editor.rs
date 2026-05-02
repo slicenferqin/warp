@@ -214,7 +214,7 @@ impl ExternalEditorView {
             EditorChoice::SystemDefault => {
                 warp_i18n::tr("settings-features-external-editor-default-app")
             }
-            EditorChoice::Warp => "Warp".to_string(),
+            EditorChoice::Warp => warp_i18n::tr("settings-brand-warp"),
             EditorChoice::EnvEditor => "$EDITOR".to_string(),
             EditorChoice::ExternalEditor(editor) => format!("{editor}"),
         }

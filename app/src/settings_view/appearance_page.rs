@@ -1613,25 +1613,25 @@ impl AppearanceSettingsPageView {
         }
     }
 
-    fn app_icon_dropdown_item_label(val: AppIcon) -> &'static str {
+    fn app_icon_dropdown_item_label(val: AppIcon) -> String {
         match val {
-            AppIcon::Aurora => "Aurora",
-            AppIcon::Default => "Default",
-            AppIcon::Classic1 => "Classic 1",
-            AppIcon::Classic2 => "Classic 2",
-            AppIcon::Classic3 => "Classic 3",
-            AppIcon::Comets => "Comets",
-            AppIcon::GlassSky => "Glass Sky",
-            AppIcon::Glitch => "Glitch",
-            AppIcon::Cow => "Cow",
-            AppIcon::Glow => "Glow",
-            AppIcon::Holographic => "Holographic",
-            AppIcon::Mono => "Mono",
-            AppIcon::Neon => "Neon",
-            AppIcon::Original => "Original",
-            AppIcon::Starburst => "Starburst",
-            AppIcon::Sticker => "Sticker",
-            AppIcon::WarpOne => "Warp 1",
+            AppIcon::Aurora => warp_i18n::tr("settings-appearance-app-icon-aurora"),
+            AppIcon::Default => warp_i18n::tr("settings-appearance-app-icon-default"),
+            AppIcon::Classic1 => warp_i18n::tr("settings-appearance-app-icon-classic-1"),
+            AppIcon::Classic2 => warp_i18n::tr("settings-appearance-app-icon-classic-2"),
+            AppIcon::Classic3 => warp_i18n::tr("settings-appearance-app-icon-classic-3"),
+            AppIcon::Comets => warp_i18n::tr("settings-appearance-app-icon-comets"),
+            AppIcon::GlassSky => warp_i18n::tr("settings-appearance-app-icon-glass-sky"),
+            AppIcon::Glitch => warp_i18n::tr("settings-appearance-app-icon-glitch"),
+            AppIcon::Cow => warp_i18n::tr("settings-appearance-app-icon-cow"),
+            AppIcon::Glow => warp_i18n::tr("settings-appearance-app-icon-glow"),
+            AppIcon::Holographic => warp_i18n::tr("settings-appearance-app-icon-holographic"),
+            AppIcon::Mono => warp_i18n::tr("settings-appearance-app-icon-mono"),
+            AppIcon::Neon => warp_i18n::tr("settings-appearance-app-icon-neon"),
+            AppIcon::Original => warp_i18n::tr("settings-appearance-app-icon-original"),
+            AppIcon::Starburst => warp_i18n::tr("settings-appearance-app-icon-starburst"),
+            AppIcon::Sticker => warp_i18n::tr("settings-appearance-app-icon-sticker"),
+            AppIcon::WarpOne => warp_i18n::tr("settings-appearance-app-icon-warp-1"),
         }
     }
 
@@ -3438,7 +3438,7 @@ impl SettingsWidget for InputTypeWidget {
             .radio_buttons(
                 self.radio_buttons_states.clone(),
                 vec![
-                    RadioButtonItem::text("Warp"),
+                    RadioButtonItem::text(warp_i18n::tr("settings-brand-warp")),
                     RadioButtonItem::text(warp_i18n::tr("settings-appearance-input-type-shell")),
                 ],
                 view.input_type_radio_state.clone(),

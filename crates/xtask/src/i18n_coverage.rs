@@ -265,6 +265,7 @@ fn starts_ignored_block(trimmed: &str) -> bool {
         || trimmed.starts_with("fn telemetry_event(")
         || (trimmed.starts_with("impl From<&") && trimmed.contains("LoginGatedFeature"))
         || (trimmed.starts_with("impl TryFrom<&") && trimmed.contains("TelemetryEvent"))
+        || trimmed.starts_with("impl TelemetryEventDesc for")
 }
 
 fn update_brace_depth(line: &str, depth: usize) -> usize {

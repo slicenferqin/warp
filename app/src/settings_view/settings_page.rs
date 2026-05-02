@@ -388,12 +388,13 @@ pub fn render_separator(appearance: &Appearance) -> Box<dyn Element> {
 }
 
 pub fn render_full_pane_width_ai_button(
-    text: &str,
+    text: impl Into<String>,
     is_any_ai_enabled: bool,
     mouse_state: MouseStateHandle,
     action: AISettingsPageAction,
     appearance: &Appearance,
 ) -> Box<dyn Element> {
+    let text = text.into();
     let (text_color, bg, icon_bg) = if is_any_ai_enabled {
         (
             appearance
@@ -411,7 +412,7 @@ pub fn render_full_pane_width_ai_button(
         )
     };
 
-    let mut button = Hoverable::new(mouse_state, |_| {
+    let mut button = Hoverable::new(mouse_state, move |_| {
         Container::new(
             Flex::row()
                 .with_main_axis_size(MainAxisSize::Max)
@@ -422,7 +423,7 @@ pub fn render_full_pane_width_ai_button(
                         1.,
                         appearance
                             .ui_builder()
-                            .wrappable_text(text.to_string(), true)
+                            .wrappable_text(text.clone(), true)
                             .with_style(UiComponentStyles {
                                 font_size: Some(CONTENT_FONT_SIZE),
                                 font_color: Some(text_color),
@@ -1914,5 +1915,5 @@ pub(super) fn build_reset_button(
             font_size: Some(appearance.ui_font_size() * 0.8),
             ..Default::default()
         })
-        .with_text_label("Reset to default".to_owned())
+        .with_text_label(warp_i18n::tr("settings-reset-to-default"))
 }

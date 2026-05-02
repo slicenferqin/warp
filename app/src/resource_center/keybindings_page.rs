@@ -100,7 +100,10 @@ impl KeybindingsView {
 
         search_editor.update(ctx, |editor, ctx| {
             editor.clear_buffer_and_reset_undo_stack(ctx);
-            editor.set_placeholder_text(settings_view::keybindings::SEARCH_PLACEHOLDER, ctx);
+            editor.set_placeholder_text(
+                warp_i18n::tr(settings_view::keybindings::SEARCH_PLACEHOLDER),
+                ctx,
+            );
         });
 
         let search_bar = {

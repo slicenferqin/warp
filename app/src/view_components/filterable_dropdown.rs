@@ -388,7 +388,7 @@ where
 
     fn render_closed_top_bar(&self, appearance: &Appearance) -> Box<dyn Element> {
         let (selected_item_text, font_family_id) = match self.static_menu_header {
-            Some(header) => (header.to_string(), None),
+            Some(header) => (warp_i18n::tr(header), None),
             None => match self.selected_item.clone() {
                 Some(MenuItem::Item(fields)) => {
                     let label = fields.label();

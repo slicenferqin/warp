@@ -89,9 +89,10 @@ fn maybe_add_settings_sync_toggle_binding<T: Action + Clone>(
         .expect("settings sync bindings lock poisoned");
     if !*lock {
         *lock = true;
+        let settings_sync = warp_i18n::tr("settings-account-settings-sync");
         toggle_binding_pairs.push(
             ToggleSettingActionPair::new(
-                "settings sync",
+                settings_sync.as_str(),
                 builder(SettingsAction::MainPageToggle(
                     MainPageAction::ToggleSettingsSync,
                 )),
