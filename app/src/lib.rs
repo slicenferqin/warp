@@ -51,6 +51,8 @@ mod modal;
 mod network;
 mod notebooks;
 mod notification;
+#[cfg(target_os = "macos")]
+mod oss_stable_import;
 mod palette;
 mod persistence;
 mod platform;
@@ -1084,6 +1086,8 @@ fn initialize_app(
     // before ensure_warp_watch_roots_exist() creates the new directory.
     #[cfg(target_os = "macos")]
     preview_config_migration::migrate_preview_config_dir_if_needed();
+    #[cfg(target_os = "macos")]
+    oss_stable_import::prompt_and_import_from_stable_if_needed();
 
     ensure_warp_watch_roots_exist();
     ctx.add_singleton_model(WarpManagedPathsWatcher::new);

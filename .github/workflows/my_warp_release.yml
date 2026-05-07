@@ -177,6 +177,7 @@ jobs:
             echo "- 保留上游 Warp 的基础能力，并面向中文系统用户提供高频 UI 汉化。"
             echo "- 覆盖 Settings、onboarding、命令面板、全局搜索、资源中心、常见菜单、通用按钮和基础提示等主要路径。"
             echo "- 本地翻译层只处理客户端 UI，不改写终端输出、AI 模型回复、Agent 运行结果或服务端返回内容。"
+            echo "- 首次启动 My Warp 时可从官方 Warp 导入本地配置、主题、标签页和会话恢复数据库，并会先备份当前 My Warp 数据。"
             echo
             echo "### 构建信息"
             echo
@@ -191,6 +192,7 @@ jobs:
             echo
             echo "- \`cargo xtask check-i18n --check-parity\`"
             echo "- \`cargo xtask check-i18n --mode hard\`"
+            echo "- \`cargo test -p warp oss_stable_import\`"
             echo "- \`./script/bundle --channel oss --check-only --nosign\`"
             echo "- \`./script/bundle --channel oss --release-tag ${TAG} --selfsign\`"
             echo
