@@ -115,6 +115,17 @@ const FONT_SIZE_INPUT_BOX_WIDTH: f32 = 80.;
 const NOTEBOOK_FONT_SIZE_INPUT_BOX_WIDTH: f32 = 50.;
 const FONT_FAMILY_DROPDOWN_WIDTH: f32 = 225.;
 const FONT_WEIGHT_DROPDOWN_WIDTH: f32 = 100.;
+const SELECTABLE_FONT_WEIGHTS: &[Weight] = &[
+    Weight::Thin,
+    Weight::ExtraLight,
+    Weight::Light,
+    Weight::Normal,
+    Weight::Medium,
+    Weight::Semibold,
+    Weight::Bold,
+    Weight::ExtraBold,
+    Weight::Black,
+];
 const LINE_HEIGHT_INPUT_BOX_WIDTH: f32 = 80.;
 const OPACITY_SLIDER_WIDTH: f32 = 150.;
 const MIN_FONT_SIZE: usize = 1;
@@ -1004,17 +1015,7 @@ impl AppearanceSettingsPageView {
             dropdown.set_top_bar_max_width(FONT_WEIGHT_DROPDOWN_WIDTH);
             dropdown.set_menu_width(FONT_WEIGHT_DROPDOWN_WIDTH, ctx);
 
-            let selectable_weights = [Weight::Normal, Weight::Bold];
-            let items = selectable_weights
-                .iter()
-                .map(|weight| {
-                    DropdownItem::new(
-                        weight.to_string(),
-                        AppearancePageAction::SetFontWeight(*weight),
-                    )
-                })
-                .collect();
-            dropdown.add_items(items, ctx);
+            dropdown.set_items(Self::font_weight_dropdown_items(), ctx);
             dropdown.set_selected_by_name(monospace_font_weight.to_string(), ctx);
             dropdown
         });
@@ -1542,6 +1543,18 @@ impl AppearanceSettingsPageView {
             )
         })
         .collect()
+    }
+
+    fn font_weight_dropdown_items() -> Vec<DropdownItem<AppearancePageAction>> {
+        SELECTABLE_FONT_WEIGHTS
+            .iter()
+            .map(|weight| {
+                DropdownItem::new(
+                    weight.to_string(),
+                    AppearancePageAction::SetFontWeight(*weight),
+                )
+            })
+            .collect()
     }
 
     fn thin_strokes_dropdown_items() -> Vec<DropdownItem<AppearancePageAction>> {
@@ -5280,5 +5293,27 @@ impl SettingsPageMeta for AppearanceSettingsPageView {
 impl From<ViewHandle<AppearanceSettingsPageView>> for SettingsPageViewHandle {
     fn from(view_handle: ViewHandle<AppearanceSettingsPageView>) -> Self {
         SettingsPageViewHandle::Appearance(view_handle)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn font_weight_dropdown_exposes_all_supported_terminal_weights() {
+        let labels = AppearanceSettingsPageView::font_weight_dropdown_items()
+            .into_iter()
+            .map(|item| item.display_text)
+            .collect::<Vec<_>>();
+        let expected_labels = SELECTABLE_FONT_WEIGHTS
+            .iter()
+            .map(ToString::to_string)
+            .collect::<Vec<_>>();
+
+        assert_eq!(labels, expected_labels);
+        assert!(labels.contains(&Weight::Medium.to_string()));
+        assert!(labels.contains(&Weight::Semibold.to_string()));
+        assert!(labels.contains(&Weight::ExtraBold.to_string()));
     }
 }
